@@ -1,4 +1,5 @@
 import socket
+import time
 
 import netifaces
 from zeroconf import ServiceInfo, Zeroconf
@@ -20,10 +21,22 @@ def get_ip_address() -> str:
         return "127.0.0.1"
 
 
+def wait_for_valid_ip(timeout=60):
+    """Wait for a valid IP address, checking every second."""
+    print("Waiting for a valid network IP...")
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        ip = get_ip_address()
+        if ip != "127.0.0.1":
+            return ip
+        time.sleep(1)
+    return "127.0.0.1"
+
+
 def register_service() -> Zeroconf:
     """Register the video server service using Zeroconf."""
     try:
-        ip = get_ip_address()
+        ip = wait_for_valid_ip()
         hostname = socket.gethostname()
 
         print(f"Registering service with IP: {ip}")
