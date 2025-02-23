@@ -60,19 +60,17 @@ else
 fi
 
 # Remove existing TVs directory if it exists
-if [ -d "TVs" ]; then
-    print_step "🗑️  Cleaning up: Removing existing TVs directory..."
-    rm -rf TVs
+if [ -d "DTC_RPI" ]; then
+    print_step "🗑️  Cleaning up: Removing existing DTC_RPI directory..."
+    rm -rf DTC_RPI
 fi
 '
 
 print_header "📥 Cloning Repository"
-execute_ssh_command "git clone https://github.com/R4j4n/TVs"
-execute_ssh_command "cd TVs && git checkout backend_dev"
-
+execute_ssh_command "git clone https://github.com/R4j4n/DTC_RPI"
 print_header "🛠️  Running Setup Scripts"
 execute_ssh_command '
-cd TVs
+cd DTC_RPI
 
 # Make scripts executable
 chmod +x configure_display.sh create_env.sh pm2setup.sh
