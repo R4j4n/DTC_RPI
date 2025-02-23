@@ -1,0 +1,13 @@
+fastapi
+httpx
+netifaces
+numpy
+opencv_python
+Pillow
+pydantic
+python_vlc
+schedule
+uvicorn
+zeroconf
+python-multipart
+cryptography
