@@ -39,7 +39,7 @@ export function GroupControl({ group }) {
 
   useEffect(() => {
     fetchAllStatuses();
-    const interval = setInterval(fetchAllStatuses, 60000);
+    const interval = setInterval(fetchAllStatuses, 30000);
     return () => clearInterval(interval);
   }, [group]);
 
@@ -54,7 +54,7 @@ export function GroupControl({ group }) {
               await uploadVideo(device.host, file);
               return { device: device.name, success: true };
             } catch (err) {
-              return { device: device.name, success: false, error: err.message };
+              // return { device: device.name, success: false, error: err.message };
             }
           });
 
@@ -70,14 +70,25 @@ export function GroupControl({ group }) {
         case 'play': {
           const videoName = args[0];
           await Promise.all(
-            group.devices.map(device => playVideo(device.host, videoName))
+            group.devices.map(device => 
+            {try{
+              playVideo(device.host, videoName)
+            } catch(error){
+            }} 
+            )
           );
           setCurrentVideo(videoName); 
           break;
         }
         case 'stop': {
           await Promise.all(
-            group.devices.map(device => {stopVideo(device.host); console.log("Stopping the video for: ", device.host);})
+            group.devices.map(device => {
+            try{
+              stopVideo(device.host); console.log("Stopping the video for: ", device.host);
+            }catch(error){
+
+            }
+            })
           );
           setCurrentVideo(null); 
           break;
@@ -85,13 +96,31 @@ export function GroupControl({ group }) {
         case 'delete': {
           const videoName = args[0];
           await Promise.all(
-            group.devices.map(device => deleteVideo(device.host, videoName))
+            group.devices.map(device => {
+              try{
+
+                deleteVideo(device.host, videoName)
+              }catch(error){
+
+              }
+            
+            })
           );
           break;
         }
         case 'pause': {
           await Promise.all(
-            group.devices.map(device => pauseVideo(device.host))
+            group.devices.map(device => 
+            {
+              try{
+
+                pauseVideo(device.host)
+              }catch(error){
+                
+              }
+            }  
+            
+            )
             
           );
           break;
