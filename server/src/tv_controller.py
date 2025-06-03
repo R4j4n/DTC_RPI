@@ -26,18 +26,27 @@ class TVController:
     def turn_on_tv(self):
         switch_handler = CECController()
         current_device = load_current_input()
-        print(f"Turning on TV at {datetime.now()}")  # Debug log
+        print(f"Turning on TV at {datetime.now()}")
+        
+        # Turn on TV (keep your working approach)
         result = os.system('echo "on 0" | cec-client -s -d 1')
-        print(f"TV turn on command result: {result}")  # Debug log
+        print(f"TV turn on command result: {result}")
 
-        # Whenever TV is turned on, try to switch to the last used input
+        # Wait a moment for TV to be ready
+        time.sleep(3)
+
+        # Try to switch input using the improved method
         if current_device == 0:
-            print("No HDMI device mapp set.")
+            print("No HDMI device mapping set.")
         else:
             try:
-                switch_handler.switch_input(device_number=current_device)
+                success = switch_handler.switch_input_simple(device_number=current_device)
+                if success:
+                    print(f"Successfully switched to HDMI {current_device}")
+                else:
+                    print(f"Failed to switch to HDMI {current_device}")
             except Exception as e:
-                print(f"Cant switch to HDMI {current_device}")
+                print(f"Exception switching to HDMI {current_device}: {e}")
 
         # Play the last played content
         video_manager.load_last_played()
