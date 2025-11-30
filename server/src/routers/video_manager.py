@@ -100,6 +100,11 @@ async def play_video(request: PlayRequest):
         file_path = video_manager.upload_dir / request.video_name
         video_manager.load_video(str(file_path))
         video_manager.play()
+
+        # In web mode, also launch the kiosk if it has launch_kiosk method
+        if hasattr(video_manager, 'launch_kiosk'):
+            video_manager.launch_kiosk()
+
         return {
             "status": "success",
             "message": f"Playing {request.video_name} in loop mode",
@@ -126,6 +131,11 @@ async def stop_video():
     """Stop video playback"""
     try:
         video_manager.stop()
+
+        # In web mode, also close the kiosk if it has close_kiosk method
+        if hasattr(video_manager, 'close_kiosk'):
+            video_manager.close_kiosk()
+
         return {"message": "Video stopped"}
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -252,6 +262,34 @@ async def stream_current_video():
     except Exception as e:
         logger.error(f"Error streaming current video: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router_main.post("/kiosk/launch")
+async def launch_kiosk():
+    """Launch the kiosk display (web mode only)"""
+    try:
+        if hasattr(video_manager, 'launch_kiosk'):
+            video_manager.launch_kiosk()
+            return {"status": "success", "message": "Kiosk display launched"}
+        else:
+            raise HTTPException(400, "Kiosk mode not available in current video player mode")
+    except Exception as e:
+        logger.error(f"Failed to launch kiosk: {e}")
+        raise HTTPException(500, f"Failed to launch kiosk: {str(e)}")
+
+
+@router_main.post("/kiosk/close")
+async def close_kiosk():
+    """Close the kiosk display (web mode only)"""
+    try:
+        if hasattr(video_manager, 'close_kiosk'):
+            video_manager.close_kiosk()
+            return {"status": "success", "message": "Kiosk display closed"}
+        else:
+            raise HTTPException(400, "Kiosk mode not available in current video player mode")
+    except Exception as e:
+        logger.error(f"Failed to close kiosk: {e}")
+        raise HTTPException(500, f"Failed to close kiosk: {str(e)}")
 
 
 @router_main.delete("/video/{video_name}")
