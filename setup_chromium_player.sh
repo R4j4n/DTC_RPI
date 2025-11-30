@@ -187,12 +187,12 @@ Wants=graphical.target
 Type=simple
 User=$CURRENT_USER
 Group=$CURRENT_USER
-WorkingDirectory=$SERVER_DIR
+WorkingDirectory=$INSTALL_DIR
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=$HOME/.Xauthority"
 Environment="HOME=$HOME"
 ExecStartPre=/bin/sleep 10
-ExecStart=/bin/bash $SCRIPTS_DIR/start_chromium_kiosk.sh
+ExecStart=/bin/bash -c 'cd $SERVER_DIR && source venv/bin/activate && python server.py'
 Restart=always
 RestartSec=10
 StandardOutput=journal

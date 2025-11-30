@@ -11,8 +11,13 @@ from fastapi import HTTPException
 
 class AuthManager:
     def __init__(self):
-        self.auth_file = Path("server/auth/auth.txt")
-        self.key_file = Path("server/auth/key.txt")
+        # Use absolute path based on script location
+        base_dir = Path(__file__).parent
+        auth_dir = base_dir / "auth"
+        self.auth_file = auth_dir / "auth.txt"
+        self.key_file = auth_dir / "key.txt"
+        # Create auth directory if it doesn't exist
+        auth_dir.mkdir(parents=True, exist_ok=True)
         self._initialize_key()
         self.stored_password = None
         self._load_password()
@@ -81,7 +86,7 @@ class AuthManager:
 
 
 # Utility function to set up initial password
-def setup_password(password: str, auth_file_path: str = "server/auth/auth.txt"):
+def setup_password(password: str, auth_file_path: Optional[str] = None):
     """
     Utility function to set up the initial encrypted password.
     This should be run once to set up the authentication system.
@@ -89,8 +94,12 @@ def setup_password(password: str, auth_file_path: str = "server/auth/auth.txt"):
     auth_manager = AuthManager()
     encrypted_password = auth_manager.encrypt_password(password)
 
-    # Ensure directory exists
-    Path(auth_file_path).parent.mkdir(parents=True, exist_ok=True)
+    # Use the auth manager's auth file if not specified
+    if auth_file_path is None:
+        auth_file_path = str(auth_manager.auth_file)
+    else:
+        # Ensure directory exists
+        Path(auth_file_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Save encrypted password
     with open(auth_file_path, "wb") as f:

@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SERVER_DIR="$PROJECT_DIR/server"
 PYTHON_VENV="$SERVER_DIR/venv/bin/python"
-SERVER_SCRIPT="$SERVER_DIR/server_chromium.py"
+SERVER_SCRIPT="server.py"
 
 # Colors for output
 RED='\033[0;31m'
