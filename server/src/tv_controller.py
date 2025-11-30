@@ -13,7 +13,13 @@ SCHEDULE_FILE = "schedule.json"
 
 from src.hdmi_controllers import CECController
 from src.routers.inputs_switch import load_current_input
-from src.video_manager import video_manager
+
+# Import video manager based on config
+from config import config, VideoPlayerMode
+if config.VIDEO_PLAYER_MODE == VideoPlayerMode.WEB:
+    from src.web_video_manager import web_video_manager as video_manager
+else:
+    from src.video_manager import video_manager
 
 
 class TVController:
@@ -49,7 +55,13 @@ class TVController:
                 print(f"Exception switching to HDMI {current_device}: {e}")
 
         # Play the last played content
-        video_manager.load_last_played()
+        if config.VIDEO_PLAYER_MODE == VideoPlayerMode.WEB:
+            # In web mode, launch kiosk display
+            print("Launching kiosk display...")
+            video_manager.launch_kiosk()
+        else:
+            # In VLC mode, load and play last video
+            video_manager.load_last_played()
         return result
 
     def turn_off_tv(self):
@@ -60,6 +72,11 @@ class TVController:
 
         # stop the the item which is being currently played
         video_manager.stop()
+
+        # In web mode, also close the kiosk browser
+        if config.VIDEO_PLAYER_MODE == VideoPlayerMode.WEB:
+            print("Closing kiosk display...")
+            video_manager.close_kiosk()
 
         return result
 
