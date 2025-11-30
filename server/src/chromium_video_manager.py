@@ -5,6 +5,7 @@ import os
 import signal
 import subprocess
 import time
+from collections import deque
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional
@@ -53,6 +54,10 @@ class ChromiumVideoManager:
 
         # WebSocket connections for controlling the video player
         self.ws_connections = set()
+
+        # Command queue for handling commands before WebSocket is ready
+        self.command_queue = deque()
+        self.queue_processing = False
 
         # Player status from browser
         self.player_status = {
@@ -156,6 +161,11 @@ class ChromiumVideoManager:
         self.ws_connections.add(websocket)
         logger.info("WebSocket connection registered")
 
+        # Process any queued commands
+        if self.command_queue:
+            logger.info(f"Processing {len(self.command_queue)} queued commands")
+            await self._process_command_queue()
+
     async def unregister_websocket(self, websocket: WebSocket):
         """Unregister a WebSocket connection"""
         self.ws_connections.discard(websocket)
@@ -163,14 +173,16 @@ class ChromiumVideoManager:
 
     async def send_command(self, command: str, data: dict = None):
         """Send a command to the video player via WebSocket"""
-        if not self.ws_connections:
-            logger.warning("No WebSocket connections available")
-            return False
-
         message = {
             "command": command,
             "data": data or {}
         }
+
+        if not self.ws_connections:
+            # Queue the command if no WebSocket connection is available
+            logger.warning(f"No WebSocket connections available, queuing command: {command}")
+            self.command_queue.append(message)
+            return False
 
         disconnected = set()
         for ws in self.ws_connections:
@@ -185,6 +197,34 @@ class ChromiumVideoManager:
             self.ws_connections.discard(ws)
 
         return len(self.ws_connections) > 0
+
+    async def _process_command_queue(self):
+        """Process all queued commands"""
+        if self.queue_processing:
+            return  # Prevent duplicate processing
+
+        self.queue_processing = True
+        try:
+            while self.command_queue and self.ws_connections:
+                message = self.command_queue.popleft()
+                logger.info(f"Sending queued command: {message['command']}")
+
+                disconnected = set()
+                for ws in self.ws_connections:
+                    try:
+                        await ws.send_json(message)
+                    except Exception as e:
+                        logger.error(f"Failed to send queued command: {e}")
+                        disconnected.add(ws)
+
+                # Clean up disconnected websockets
+                for ws in disconnected:
+                    self.ws_connections.discard(ws)
+
+                # Small delay between commands
+                await asyncio.sleep(0.1)
+        finally:
+            self.queue_processing = False
 
     def validate_video(self, video_path: str) -> bool:
         """Validate video file before playing"""
