@@ -60,7 +60,7 @@ check_warn() {
 
 # Check system packages
 echo -e "${BLUE}System Packages${NC}"
-check "Chromium browser installed" "command -v chromium-browser"
+check "Chromium browser installed" "command -v chromium || command -v chromium-browser"
 check "X server installed" "command -v X"
 check "xinit installed" "command -v xinit"
 check "xset installed" "command -v xset"

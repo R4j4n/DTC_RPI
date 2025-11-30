@@ -419,7 +419,7 @@ journalctl -u chromium-kiosk | grep chromium
 **Solutions**:
 ```bash
 # Kill stale processes
-pkill -9 chromium-browser
+pkill -9 chromium
 
 # Clear cache
 rm -rf ~/.config/chromium/
@@ -428,7 +428,7 @@ rm -rf ~/.config/chromium/
 ls -la /home/pi/DTC_RPI/scripts/start_chromium_kiosk.sh
 
 # Manually test Chromium
-DISPLAY=:0 chromium-browser --kiosk http://localhost:8000/player
+DISPLAY=:0 chromium --kiosk http://localhost:8000/player
 ```
 
 #### 3. WebSocket Connection Failed
@@ -476,7 +476,7 @@ ffmpeg -i input.mkv -c:v libx264 -c:a aac output.mp4
 **Solutions**:
 ```bash
 # Check hardware acceleration
-DISPLAY=:0 chromium-browser chrome://gpu
+DISPLAY=:0 chromium chrome://gpu
 
 # Verify GPU rendering
 grep -i render /var/log/Xorg.0.log

@@ -84,7 +84,7 @@ class ChromiumVideoManager:
             player_url = f"http://{host}:{port}/player"
 
             chromium_args = [
-                "chromium-browser",
+                "chromium",
                 "--kiosk",  # Fullscreen kiosk mode
                 "--noerrdialogs",  # No error dialogs
                 "--disable-infobars",  # No info bars

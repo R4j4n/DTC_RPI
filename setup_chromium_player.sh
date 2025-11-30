@@ -51,7 +51,7 @@ log_step "Step 2: Installing system packages"
 log_info "Installing Chromium browser, X server, and utilities..."
 
 sudo apt-get install -y \
-    chromium-browser \
+    chromium \
     xserver-xorg \
     xinit \
     x11-xserver-utils \

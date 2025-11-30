@@ -43,7 +43,7 @@ Look for: `active (running)`
 
 ### 2. Check Chromium Process
 ```bash
-ps aux | grep chromium-browser
+ps aux | grep chromium
 ```
 Should show chromium running with `--kiosk` flag
 
@@ -109,7 +109,7 @@ sudo systemctl restart chromium-kiosk
 ### Chromium Won't Start
 ```bash
 # Kill all Chromium processes
-pkill -9 chromium-browser
+pkill -9 chromium
 
 # Clear Chromium cache
 rm -rf ~/.config/chromium/
