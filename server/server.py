@@ -139,6 +139,50 @@ async def serve_kiosk():
     raise HTTPException(status_code=404, detail="Kiosk display not found")
 
 
+# Public endpoints for kiosk (no authentication required)
+@app.get("/public/status")
+async def get_public_status():
+    """Get video player status - public endpoint for kiosk display"""
+    status = video_manager.get_status()
+    videos = list(video_manager.upload_dir.glob("*.mp4"))
+
+    return {
+        "current_video": status["current_video"],
+        "is_playing": status["is_playing"],
+        "is_paused": status["status"] == PlayerState.PAUSED,
+        "is_looping": status["is_looping"],
+        "available_videos": [f.name for f in videos],
+    }
+
+
+@app.get("/public/stream/current")
+async def stream_current_video_public():
+    """Stream the currently loaded video - public endpoint for kiosk display"""
+    from fastapi.responses import StreamingResponse
+
+    try:
+        status = video_manager.get_status()
+        if not status.get("current_video"):
+            raise HTTPException(status_code=404, detail="No video currently loaded")
+
+        video_name = status["current_video"]
+        video_path = video_manager.upload_dir / video_name
+
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail=f"Current video file not found")
+
+        def iterfile():
+            with open(video_path, mode="rb") as file_like:
+                yield from file_like
+
+        return StreamingResponse(iterfile(), media_type="video/mp4")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error streaming current video: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     # Print configuration
     print(f"Starting DTC_RPI Server in {config.VIDEO_PLAYER_MODE.value.upper()} mode")

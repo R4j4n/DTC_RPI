@@ -274,12 +274,12 @@
         // Load current video
         async function loadCurrentVideo() {
             try {
-                const response = await fetch(`${API_BASE}/status`);
+                const response = await fetch(`${API_BASE}/public/status`);
                 const data = await response.json();
 
                 if (data.current_video && data.is_playing) {
                     currentVideoName = data.current_video;
-                    const videoUrl = `${API_BASE}/stream/current?t=${Date.now()}`;
+                    const videoUrl = `${API_BASE}/public/stream/current?t=${Date.now()}`;
 
                     videoPlayer.src = videoUrl;
                     videoPlayer.load();
@@ -304,7 +304,7 @@
         // Check video status
         async function checkVideoStatus() {
             try {
-                const response = await fetch(`${API_BASE}/status`);
+                const response = await fetch(`${API_BASE}/public/status`);
                 const data = await response.json();
 
                 // Reload if video changed
