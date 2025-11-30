@@ -57,9 +57,11 @@ async def login(request: Login):
 @app.get("/player")
 async def get_player():
     """Serve the HTML5 video player interface"""
-    player_path = Path("web/video_player.html")
+    # Use absolute path based on this file's location
+    server_dir = Path(__file__).parent
+    player_path = server_dir / "web" / "video_player.html"
     if not player_path.exists():
-        raise HTTPException(status_code=404, detail="Video player not found")
+        raise HTTPException(status_code=404, detail=f"Video player not found at {player_path}")
     return FileResponse(player_path)
 
 

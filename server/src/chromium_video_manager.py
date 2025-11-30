@@ -262,6 +262,14 @@ class ChromiumVideoManager:
             logger.error(f"Video validation failed: {e}")
             return False
 
+    def _try_send_command_async(self, command: str, data: dict = None):
+        """Try to send command asynchronously, fall back to queue if no event loop"""
+        try:
+            asyncio.create_task(self.send_command(command, data))
+        except RuntimeError:
+            # No event loop running, queue the command instead
+            self.queue_command(command, data)
+
     def load_video(self, video_path: str):
         """Load a video for playback"""
         if not Path(video_path).is_file():
@@ -276,12 +284,7 @@ class ChromiumVideoManager:
             video_url = f"/videos/{video_filename}"
 
             # Send load command to browser
-            try:
-                # Try to use the running event loop
-                asyncio.create_task(self.send_command("load", {"path": video_url}))
-            except RuntimeError:
-                # No event loop running, queue the command instead
-                self.queue_command("load", {"path": video_url})
+            self._try_send_command_async("load", {"path": video_url})
 
             self.error_count = 0
             self.current_video = video_path
@@ -300,12 +303,7 @@ class ChromiumVideoManager:
             raise ValueError("No video loaded")
 
         try:
-            try:
-                asyncio.create_task(self.send_command("play"))
-            except RuntimeError:
-                # No event loop running, queue the command instead
-                self.queue_command("play")
-
+            self._try_send_command_async("play")
             self.is_playing = True
             self.is_paused = False
             logger.info("Video playback started")
@@ -319,11 +317,7 @@ class ChromiumVideoManager:
                 try:
                     # Reload video and try again
                     self.load_video(self.current_video)
-                    try:
-                        asyncio.create_task(self.send_command("play"))
-                    except RuntimeError:
-                        self.queue_command("play")
-
+                    self._try_send_command_async("play")
                     self.is_playing = True
                     self.is_paused = False
                     logger.info("Playback recovery successful")
@@ -339,12 +333,7 @@ class ChromiumVideoManager:
             raise ValueError("No video loaded")
 
         try:
-            try:
-                asyncio.create_task(self.send_command("pause"))
-            except RuntimeError:
-                # No event loop running, queue the command instead
-                self.queue_command("pause")
-
+            self._try_send_command_async("pause")
             self.is_playing = False
             self.is_paused = True
             logger.info("Video paused successfully")
@@ -359,12 +348,7 @@ class ChromiumVideoManager:
             raise ValueError("No video loaded")
 
         try:
-            try:
-                asyncio.create_task(self.send_command("stop"))
-            except RuntimeError:
-                # No event loop running, queue the command instead
-                self.queue_command("stop")
-
+            self._try_send_command_async("stop")
             self.is_playing = False
             self.is_paused = False
             self.error_count = 0  # Reset error count
