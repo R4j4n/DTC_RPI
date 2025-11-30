@@ -13,7 +13,7 @@ SCHEDULE_FILE = "schedule.json"
 
 from src.hdmi_controllers import CECController
 from src.routers.inputs_switch import load_current_input
-from src.video_manager import video_manager
+from src.chromium_video_manager import video_manager
 
 
 class TVController:

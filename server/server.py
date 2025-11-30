@@ -1,6 +1,9 @@
 import uvicorn
+from pathlib import Path
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from session_encrypt import auth_manager
 from src.hdmi_controllers import CECController
@@ -14,7 +17,7 @@ from src.routers.video_manager import (  # main router
 )
 from src.tv_controller import TVController
 from src.utils import register_service
-from src.video_manager import PlayerState, logger, video_manager
+from src.chromium_video_manager import PlayerState, logger, video_manager
 
 app = FastAPI()
 
@@ -109,6 +112,40 @@ def initialize_protected_routers(app: FastAPI, use: bool = False):
 
 
 initialize_protected_routers(app, use=True)
+
+
+# Mount static files for video serving (no auth required for player)
+app.mount("/videos", StaticFiles(directory="uploaded_videos"), name="videos")
+
+
+# HTML Player endpoint (no auth required)
+@app.get("/player", response_class=HTMLResponse)
+async def get_player():
+    """Serve the HTML video player interface"""
+    try:
+        html_path = Path("templates/video_player.html")
+        if not html_path.exists():
+            raise HTTPException(status_code=404, detail="Player template not found")
+
+        with open(html_path, "r") as f:
+            html_content = f.read()
+
+        return HTMLResponse(content=html_content)
+    except Exception as e:
+        logger.error(f"Error serving player: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# API endpoint for player state (no auth required for local browser)
+@app.get("/api/player/state")
+async def get_player_state():
+    """Get current player state for HTML player to consume"""
+    try:
+        state = video_manager.get_player_state()
+        return state
+    except Exception as e:
+        logger.error(f"Error getting player state: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

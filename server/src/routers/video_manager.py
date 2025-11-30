@@ -15,7 +15,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from src.video_manager import PlayerState
+from src.chromium_video_manager import PlayerState
 
 # Store the controller reference
 video_manager = None
