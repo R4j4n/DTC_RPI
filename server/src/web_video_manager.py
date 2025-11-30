@@ -133,15 +133,19 @@ class WebVideoManager:
             # Kill any existing Chromium processes
             subprocess.run(["pkill", "-f", "chromium"], check=False)
 
-            # Launch kiosk mode
-            script_path = Path(__file__).parent.parent / "launch_kiosk.sh"
+            # Try headless script first (for Pi OS Lite), fallback to regular script
+            headless_script = Path(__file__).parent.parent / "launch_kiosk_headless.sh"
+            regular_script = Path(__file__).parent.parent / "launch_kiosk.sh"
+
+            script_path = headless_script if headless_script.exists() else regular_script
+
             if script_path.exists():
                 self.kiosk_process = subprocess.Popen(
                     [str(script_path)],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
-                logger.info("Kiosk display launched")
+                logger.info(f"Kiosk display launched using {script_path.name}")
             else:
                 logger.error(f"Kiosk launch script not found: {script_path}")
         except Exception as e:
