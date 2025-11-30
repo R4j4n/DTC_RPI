@@ -12,10 +12,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Configuration
-INSTALL_DIR="/home/pi/DTC_RPI"
+# Configuration - Use current directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_DIR="$SCRIPT_DIR"
 SERVER_DIR="$INSTALL_DIR/server"
 SCRIPTS_DIR="$INSTALL_DIR/scripts"
+CURRENT_USER="$(whoami)"
 
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -35,10 +37,13 @@ log_step() {
 
 # Check if running as root
 if [ "$EUID" -eq 0 ]; then
-    log_error "Please run this script as the 'pi' user, not as root"
+    log_error "Please run this script as a regular user, not as root"
     log_info "Use: ./setup_chromium_player.sh"
     exit 1
 fi
+
+log_info "Running as user: $CURRENT_USER"
+log_info "Install directory: $INSTALL_DIR"
 
 log_step "Chromium Video Player Setup for Raspberry Pi"
 
@@ -130,9 +135,9 @@ deactivate
 log_step "Step 5: Configuring X server"
 
 # Create .xinitrc if it doesn't exist
-if [ ! -f "/home/pi/.xinitrc" ]; then
+if [ ! -f "$HOME/.xinitrc" ]; then
     log_info "Creating .xinitrc for auto-start..."
-    cat > /home/pi/.xinitrc << 'EOF'
+    cat > "$HOME/.xinitrc" << 'EOF'
 #!/bin/bash
 
 # Disable screen blanking
@@ -146,7 +151,7 @@ unclutter -idle 1 -root &
 # Execute window manager (lightweight)
 exec openbox-session
 EOF
-    chmod +x /home/pi/.xinitrc
+    chmod +x "$HOME/.xinitrc"
 fi
 
 # Configure auto-login (if not already configured)
@@ -160,7 +165,7 @@ else
     sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null << EOF
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin pi --noclear %I \$TERM
+ExecStart=-/sbin/agetty --autologin $CURRENT_USER --noclear %I \$TERM
 EOF
 fi
 
@@ -170,9 +175,36 @@ log_step "Step 7: Installing systemd service"
 # Make launcher script executable
 chmod +x "$SCRIPTS_DIR/start_chromium_kiosk.sh"
 
-# Copy systemd service file
-log_info "Installing systemd service..."
-sudo cp "$INSTALL_DIR/systemd/chromium-kiosk.service" /etc/systemd/system/
+# Create systemd service file dynamically
+log_info "Creating systemd service..."
+sudo tee /etc/systemd/system/chromium-kiosk.service > /dev/null << EOF
+[Unit]
+Description=Chromium Kiosk Mode Digital Signage Server
+After=network.target graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=$CURRENT_USER
+Group=$CURRENT_USER
+WorkingDirectory=$SERVER_DIR
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=$HOME/.Xauthority"
+Environment="HOME=$HOME"
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/bash $SCRIPTS_DIR/start_chromium_kiosk.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=graphical.target
+EOF
 
 # Reload systemd
 sudo systemctl daemon-reload

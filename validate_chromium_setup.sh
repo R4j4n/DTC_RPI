@@ -16,7 +16,9 @@ PASS="${GREEN}✓${NC}"
 FAIL="${RED}✗${NC}"
 WARN="${YELLOW}⚠${NC}"
 
-INSTALL_DIR="/home/pi/DTC_RPI"
+# Auto-detect installation directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_DIR="$SCRIPT_DIR"
 SERVER_DIR="$INSTALL_DIR/server"
 
 errors=0

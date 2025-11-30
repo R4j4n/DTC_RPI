@@ -5,9 +5,11 @@
 
 set -e
 
-# Configuration
+# Configuration - Auto-detect paths
 DISPLAY=:0
-SERVER_DIR="/home/pi/DTC_RPI/server"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+SERVER_DIR="$PROJECT_DIR/server"
 PYTHON_VENV="$SERVER_DIR/venv/bin/python"
 SERVER_SCRIPT="$SERVER_DIR/server_chromium.py"
 
@@ -29,10 +31,9 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if running as the correct user
-if [ "$USER" != "pi" ]; then
-    log_warn "This script should be run as the 'pi' user"
-fi
+# Log current user
+log_info "Running as user: $USER"
+log_info "Server directory: $SERVER_DIR"
 
 # Export display
 export DISPLAY=$DISPLAY
