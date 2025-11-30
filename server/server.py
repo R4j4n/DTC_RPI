@@ -1,7 +1,10 @@
 import uvicorn
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from pathlib import Path
 from session_encrypt import auth_manager
 from src.hdmi_controllers import CECController
 from src.routers.group_router import group_router
@@ -12,9 +15,16 @@ from src.routers.video_manager import (  # main router
     initialize_router_video_manager_logger,
     router_main,
 )
+from src.routers.wristband_router import wristband_router
 from src.tv_controller import TVController
 from src.utils import register_service
-from src.video_manager import PlayerState, logger, video_manager
+from config import config, VideoPlayerMode
+
+# Import appropriate video manager based on configuration
+if config.VIDEO_PLAYER_MODE == VideoPlayerMode.WEB:
+    from src.web_video_manager import web_video_manager as video_manager, PlayerState, logger
+else:
+    from src.video_manager import video_manager, PlayerState, logger
 
 app = FastAPI()
 
@@ -107,10 +117,47 @@ def initialize_protected_routers(app: FastAPI, use: bool = False):
     else:
         app.include_router(router_main, tags=["Main Video Controller"])
 
+    # Add wristband schedule router (no auth needed for display)
+    app.include_router(wristband_router, prefix="/wristband", tags=["Wristband Schedule"])
+
 
 initialize_protected_routers(app, use=True)
 
+# Serve static files for kiosk display
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+# Add route to serve kiosk display
+@app.get("/kiosk")
+async def serve_kiosk():
+    """Serve the kiosk display HTML"""
+    kiosk_file = Path(__file__).parent / "static" / "kiosk.html"
+    if kiosk_file.exists():
+        return FileResponse(kiosk_file)
+    raise HTTPException(status_code=404, detail="Kiosk display not found")
+
 
 if __name__ == "__main__":
+    # Print configuration
+    print(f"Starting DTC_RPI Server in {config.VIDEO_PLAYER_MODE.value.upper()} mode")
+
+    # Register service for network discovery
     zeroconf = register_service()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # Auto-launch kiosk if configured and in web mode
+    if config.VIDEO_PLAYER_MODE == VideoPlayerMode.WEB and config.KIOSK_AUTO_LAUNCH:
+        # Import here to avoid circular dependency
+        import threading
+        import time
+
+        def delayed_kiosk_launch():
+            time.sleep(3)  # Wait for server to start
+            print("Launching kiosk display...")
+            video_manager.launch_kiosk()
+
+        kiosk_thread = threading.Thread(target=delayed_kiosk_launch, daemon=True)
+        kiosk_thread.start()
+
+    uvicorn.run(app, host=config.SERVER_HOST, port=config.SERVER_PORT)

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trampoline Park Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main video container - takes full screen */
+        #video-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        #video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Bottom timing bar - minimal and clean */
+        #timing-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid #ff1152;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 60px;
+        }
+
+        /* Current jump time section - left side */
+        #current-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .current-label {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+        }
+
+        .current-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .current-time {
+            font-size: 32px;
+            color: #fff;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .current-color-dot {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .current-color-name {
+            font-size: 24px;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .countdown-text {
+            font-size: 16px;
+            color: #26f434;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        /* Divider */
+        .divider {
+            width: 1px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Upcoming section - right side */
+        #upcoming-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upcoming-label {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .upcoming-slots {
+            display: flex;
+            gap: 25px;
+        }
+
+        .upcoming-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upcoming-slot .time {
+            font-size: 13px;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .upcoming-slot .color-dot {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+        }
+
+        .upcoming-slot .color-name {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .upcoming-slot .in-time {
+            font-size: 11px;
+            color: #caff1a;
+            font-weight: 500;
+        }
+
+        /* Loading state */
+        .status-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px 50px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide video controls */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+
+        /* Smooth transitions */
+        .current-color-dot,
+        .upcoming-slot .color-dot {
+            transition: all 0.3s ease;
+        }
+
+        /* Pulse animation for current slot */
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .current-color-dot {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Section -->
+    <div id="video-container">
+        <video id="video-player" autoplay loop muted playsinline></video>
+        <div id="status-message" class="status-message" style="display: none;">Loading...</div>
+    </div>
+
+    <!-- Minimal Timing Bar -->
+    <div id="timing-bar">
+        <!-- Current Jump Time -->
+        <div id="current-section">
+            <span class="current-label">Jump Time Over</span>
+            <div class="current-info">
+                <span class="current-time">--:--</span>
+                <div class="current-color-dot" style="background: #666;"></div>
+                <span class="current-color-name">Loading...</span>
+                <span class="countdown-text">--:--</span>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider"></div>
+
+        <!-- Upcoming Wristbands -->
+        <div id="upcoming-section">
+            <span class="upcoming-label">Upcoming Wristbands</span>
+            <div class="upcoming-slots">
+                <!-- Will be populated by JavaScript -->
+                <div class="upcoming-slot">
+                    <span class="time">--:--</span>
+                    <div class="color-dot" style="background: #666;"></div>
+                    <span class="color-name">---</span>
+                    <span class="in-time">--:--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const videoPlayer = document.getElementById('video-player');
+        const statusMessage = document.getElementById('status-message');
+
+        // Configuration
+        const UPDATE_INTERVAL = 1000; // Update every second
+        const VIDEO_CHECK_INTERVAL = 5000; // Check video every 5 seconds
+
+        // State
+        let currentVideoName = null;
+        let scheduleUpdateTimer = null;
+        let videoCheckTimer = null;
+
+        // Initialize
+        async function initialize() {
+            console.log('🚀 Initializing trampoline park display...');
+
+            await loadCurrentVideo();
+            await updateScheduleDisplay();
+
+            // Start periodic updates
+            scheduleUpdateTimer = setInterval(updateScheduleDisplay, UPDATE_INTERVAL);
+            videoCheckTimer = setInterval(checkVideoStatus, VIDEO_CHECK_INTERVAL);
+
+            console.log('✅ Display initialized');
+        }
+
+        // Load current video
+        async function loadCurrentVideo() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+
+                if (data.current_video && data.is_playing) {
+                    currentVideoName = data.current_video;
+                    const videoUrl = `${API_BASE}/stream/current?t=${Date.now()}`;
+
+                    videoPlayer.src = videoUrl;
+                    videoPlayer.load();
+
+                    // Attempt to play
+                    try {
+                        await videoPlayer.play();
+                        hideStatus();
+                    } catch (err) {
+                        console.warn('Autoplay blocked, waiting for user interaction');
+                        showStatus('Tap to start', true);
+                    }
+                } else {
+                    showStatus('No video playing');
+                }
+            } catch (error) {
+                console.error('Error loading video:', error);
+                showStatus('Error loading video');
+            }
+        }
+
+        // Check video status
+        async function checkVideoStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+
+                // Reload if video changed
+                if (data.current_video !== currentVideoName) {
+                    console.log('📹 Video changed, reloading...');
+                    await loadCurrentVideo();
+                }
+
+                // Sync playback state
+                if (data.is_playing && videoPlayer.paused) {
+                    videoPlayer.play();
+                } else if (!data.is_playing && !videoPlayer.paused) {
+                    videoPlayer.pause();
+                }
+            } catch (error) {
+                console.error('Error checking video status:', error);
+            }
+        }
+
+        // Update schedule display
+        async function updateScheduleDisplay() {
+            try {
+                const response = await fetch(`${API_BASE}/wristband/schedule/status`);
+                const data = await response.json();
+
+                updateCurrentSection(data.current_slot);
+                updateUpcomingSection(data.upcoming_slots);
+
+            } catch (error) {
+                console.error('Error updating schedule:', error);
+            }
+        }
+
+        // Update current jump time section
+        function updateCurrentSection(slot) {
+            const section = document.getElementById('current-section');
+
+            if (!slot) {
+                section.innerHTML = `
+                    <span class="current-label">Jump Time Over</span>
+                    <div class="current-info">
+                        <span class="current-color-name">No Active Session</span>
+                    </div>
+                `;
+                return;
+            }
+
+            section.innerHTML = `
+                <span class="current-label">Jump Time Over</span>
+                <div class="current-info">
+                    <span class="current-time">${slot.time}</span>
+                    <div class="current-color-dot" style="background: ${slot.hex_color};"></div>
+                    <span class="current-color-name">${slot.color.toUpperCase()}</span>
+                    <span class="countdown-text">${slot.countdown}</span>
+                </div>
+            `;
+        }
+
+        // Update upcoming wristbands section
+        function updateUpcomingSection(slots) {
+            const container = document.querySelector('.upcoming-slots');
+
+            if (!slots || slots.length === 0) {
+                container.innerHTML = `
+                    <div class="upcoming-slot">
+                        <span class="color-name">No upcoming sessions</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show up to 3 upcoming slots
+            const slotsToShow = slots.slice(0, 3);
+
+            container.innerHTML = slotsToShow.map(slot => `
+                <div class="upcoming-slot">
+                    <span class="time">${slot.time}</span>
+                    <div class="color-dot" style="background: ${slot.hex_color};"></div>
+                    <span class="color-name">${slot.color.toUpperCase()}</span>
+                    <span class="in-time">${slot.countdown}</span>
+                </div>
+            `).join('');
+        }
+
+        // Show status message
+        function showStatus(message, clickable = false) {
+            statusMessage.textContent = message;
+            statusMessage.style.display = 'block';
+
+            if (clickable) {
+                document.body.style.cursor = 'pointer';
+                document.body.onclick = async () => {
+                    try {
+                        await videoPlayer.play();
+                        hideStatus();
+                    } catch (err) {
+                        console.error('Play failed:', err);
+                    }
+                };
+            }
+        }
+
+        // Hide status message
+        function hideStatus() {
+            statusMessage.style.display = 'none';
+            document.body.style.cursor = 'default';
+            document.body.onclick = null;
+        }
+
+        // Video event handlers
+        videoPlayer.addEventListener('error', (e) => {
+            console.error('Video error:', e);
+            showStatus('Video error - retrying...');
+            setTimeout(loadCurrentVideo, 3000);
+        });
+
+        videoPlayer.addEventListener('ended', () => {
+            console.log('Video ended, restarting...');
+            videoPlayer.play();
+        });
+
+        videoPlayer.addEventListener('canplay', () => {
+            console.log('✅ Video ready to play');
+        });
+
+        // Initialize on load
+        window.addEventListener('load', initialize);
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (scheduleUpdateTimer) clearInterval(scheduleUpdateTimer);
+            if (videoCheckTimer) clearInterval(videoCheckTimer);
+        });
+
+        // Prevent context menu and text selection
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+
+        // Log readiness
+        console.log('🎪 Trampoline Park Display Ready');
+    </script>
+</body>
+</html>

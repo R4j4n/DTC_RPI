@@ -209,6 +209,51 @@ async def get_preview():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router_main.get("/stream/{video_name}")
+async def stream_video(video_name: str):
+    """Stream the original video file for HTML5 player"""
+    try:
+        video_path = video_manager.upload_dir / video_name
+
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail=f"Video {video_name} not found")
+
+        def iterfile():
+            with open(video_path, mode="rb") as file_like:
+                yield from file_like
+
+        return StreamingResponse(iterfile(), media_type="video/mp4")
+    except Exception as e:
+        logger.error(f"Error streaming video: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router_main.get("/stream/current")
+async def stream_current_video():
+    """Stream the currently loaded video"""
+    try:
+        status = video_manager.get_status()
+        if not status.get("current_video"):
+            raise HTTPException(status_code=404, detail="No video currently loaded")
+
+        video_name = status["current_video"]
+        video_path = video_manager.upload_dir / video_name
+
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail=f"Current video file not found")
+
+        def iterfile():
+            with open(video_path, mode="rb") as file_like:
+                yield from file_like
+
+        return StreamingResponse(iterfile(), media_type="video/mp4")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error streaming current video: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router_main.delete("/video/{video_name}")
 async def delete_video(video_name: str):
     try:
