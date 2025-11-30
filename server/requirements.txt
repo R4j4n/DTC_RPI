@@ -6,3 +6,6 @@ python_vlc==3.0.21203
 schedule==1.2.2
 uvicorn==0.34.0
 zeroconf==0.144.1
+websockets==12.0
+python-multipart==0.0.9
+aiofiles==23.2.1

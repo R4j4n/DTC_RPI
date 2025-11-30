@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #video-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #status-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #0f0;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .status-active {
+            display: block !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <video id="video-player" autoplay></video>
+    </div>
+
+    <div id="status-overlay"></div>
+
+    <script>
+        const video = document.getElementById('video-player');
+        const statusOverlay = document.getElementById('status-overlay');
+
+        let ws = null;
+        let reconnectInterval = null;
+        let currentVideoPath = null;
+        let shouldLoop = true;
+
+        // WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/video`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                showStatus('Connected', 2000);
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleCommand(message);
+                } catch (error) {
+                    console.error('Failed to parse message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                showStatus('Disconnected - Reconnecting...', 0);
+
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(() => {
+                        console.log('Attempting to reconnect...');
+                        connectWebSocket();
+                    }, 3000);
+                }
+            };
+        }
+
+        // Handle commands from server
+        function handleCommand(message) {
+            const { command, data } = message;
+
+            switch (command) {
+                case 'load':
+                    loadVideo(data.path);
+                    break;
+                case 'play':
+                    playVideo();
+                    break;
+                case 'pause':
+                    pauseVideo();
+                    break;
+                case 'stop':
+                    stopVideo();
+                    break;
+                case 'set_loop':
+                    shouldLoop = data.loop;
+                    video.loop = shouldLoop;
+                    break;
+                case 'get_status':
+                    sendStatus();
+                    break;
+                default:
+                    console.warn('Unknown command:', command);
+            }
+        }
+
+        // Load video
+        function loadVideo(path) {
+            currentVideoPath = path;
+            video.src = path;
+            video.loop = shouldLoop;
+            showStatus(`Loading: ${path.split('/').pop()}`, 2000);
+        }
+
+        // Play video
+        function playVideo() {
+            video.play()
+                .then(() => {
+                    showStatus('Playing', 1000);
+                    sendStatus();
+                })
+                .catch(error => {
+                    console.error('Play error:', error);
+                    sendError('Failed to play video: ' + error.message);
+                });
+        }
+
+        // Pause video
+        function pauseVideo() {
+            video.pause();
+            showStatus('Paused', 1000);
+            sendStatus();
+        }
+
+        // Stop video
+        function stopVideo() {
+            video.pause();
+            video.currentTime = 0;
+            showStatus('Stopped', 1000);
+            sendStatus();
+        }
+
+        // Send status to server
+        function sendStatus() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const status = {
+                    type: 'status',
+                    data: {
+                        current_video: currentVideoPath ? currentVideoPath.split('/').pop() : null,
+                        is_playing: !video.paused && !video.ended,
+                        is_paused: video.paused && video.currentTime > 0,
+                        current_time: video.currentTime,
+                        duration: video.duration,
+                        volume: video.volume,
+                        is_looping: shouldLoop,
+                        ready_state: video.readyState
+                    }
+                };
+                ws.send(JSON.stringify(status));
+            }
+        }
+
+        // Send error to server
+        function sendError(errorMessage) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    data: { message: errorMessage }
+                }));
+            }
+        }
+
+        // Show status overlay
+        function showStatus(message, duration = 0) {
+            statusOverlay.textContent = message;
+            statusOverlay.classList.add('status-active');
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    statusOverlay.classList.remove('status-active');
+                }, duration);
+            }
+        }
+
+        // Video event listeners
+        video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+            sendStatus();
+        });
+
+        video.addEventListener('play', () => {
+            console.log('Video playing');
+            sendStatus();
+        });
+
+        video.addEventListener('pause', () => {
+            console.log('Video paused');
+            sendStatus();
+        });
+
+        video.addEventListener('ended', () => {
+            console.log('Video ended');
+            if (shouldLoop) {
+                video.currentTime = 0;
+                video.play();
+            }
+            sendStatus();
+        });
+
+        video.addEventListener('error', (e) => {
+            console.error('Video error:', e);
+            const errorMessage = `Video error: ${video.error ? video.error.message : 'Unknown error'}`;
+            showStatus(errorMessage, 5000);
+            sendError(errorMessage);
+        });
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+
+        // Send status updates periodically
+        setInterval(() => {
+            if (!video.paused) {
+                sendStatus();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

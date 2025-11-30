@@ -1,0 +1,26 @@
+[Unit]
+Description=Chromium Kiosk Mode Digital Signage Server
+After=network.target graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/DTC_RPI/server
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+Environment="HOME=/home/pi"
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/bash /home/pi/DTC_RPI/scripts/start_chromium_kiosk.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=graphical.target
