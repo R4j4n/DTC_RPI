@@ -55,13 +55,13 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 140px;
+            height: 180px;
             background: rgba(0, 0, 0, 0.95);
             border-top: 2px solid #333;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px 30px;
+            padding: 20px 40px;
             font-family: monospace;
             z-index: 999;
             backdrop-filter: blur(10px);
@@ -69,24 +69,33 @@
 
         #past-section {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 40px;
             flex: 1;
         }
 
-        #past-label {
-            font-size: 12px;
-            color: #666;
+        .past-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .past-column-label {
+            font-size: 19px;
+            color: #fff;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: bold;
+            text-align: center;
+            min-height: 30px;
         }
 
         #past-colors-section {
             display: flex;
-            gap: 20px;
-            align-items: center;
+            gap: 40px;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -94,23 +103,31 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            opacity: 0.6;
+            gap: 12px;
+            opacity: 0.7;
             transition: all 0.3s ease;
         }
 
         .past-color-circle {
-            width: 65px;
-            height: 65px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            border: 2px solid #555;
+            border: 3px solid #555;
             transition: all 0.3s ease;
             flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         .past-time {
-            font-size: 13px;
-            color: #888;
+            font-size: 20px;
+            color: #0f0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .past-time-ago {
+            font-size: 18px;
+            color: #fff;
             text-align: center;
         }
 
@@ -129,26 +146,46 @@
             object-fit: contain;
         }
 
+        #current-time {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: #0f0;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
         #upcoming-section {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 40px;
             flex: 1;
         }
 
-        #upcoming-label {
-            font-size: 12px;
-            color: #666;
+        .upcoming-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .upcoming-column-label {
+            font-size: 19px;
+            color: #fff;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: bold;
+            text-align: center;
+            min-height: 30px;
         }
 
         #upcoming-colors-section {
             display: flex;
-            gap: 20px;
-            align-items: center;
+            gap: 40px;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -156,7 +193,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             opacity: 0.8;
             transition: all 0.3s ease;
         }
@@ -166,24 +203,32 @@
         }
 
         .upcoming-color-circle {
-            width: 65px;
-            height: 65px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            border: 2px solid #555;
+            border: 3px solid #555;
             transition: all 0.3s ease;
             flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         .upcoming-time {
-            font-size: 13px;
-            color: #888;
+            font-size: 20px;
+            color: #0f0;
             text-align: center;
+            font-weight: bold;
         }
 
         .upcoming-timer {
-            font-size: 14px;
+            font-size: 20px;
             color: #0f0;
             font-weight: bold;
+            text-align: center;
+        }
+
+        .upcoming-time-remaining {
+            font-size: 18px;
+            color: #fff;
             text-align: center;
         }
     </style>
@@ -196,9 +241,16 @@
     <div id="status-overlay"></div>
 
     <div id="wristband-banner">
+        <div id="current-time"></div>
+
         <div id="past-section">
-            <div id="past-label">Recent Jump Times</div>
-            <div id="past-colors-section"></div>
+            <div class="past-column">
+                <div class="past-column-label">Jump Time Over</div>
+            </div>
+            <div class="past-column" id="past-colors-section"></div>
+            <div class="past-column">
+                <div class="past-column-label" id="past-status-label"></div>
+            </div>
         </div>
 
         <div id="logo-section">
@@ -206,8 +258,13 @@
         </div>
 
         <div id="upcoming-section">
-            <div id="upcoming-label">Upcoming Wristbands</div>
-            <div id="upcoming-colors-section"></div>
+            <div class="upcoming-column">
+                <div class="upcoming-column-label">Upcoming Wristband</div>
+            </div>
+            <div class="upcoming-column" id="upcoming-colors-section"></div>
+            <div class="upcoming-column">
+                <div class="upcoming-column-label" id="upcoming-status-label"></div>
+            </div>
         </div>
     </div>
 
@@ -216,192 +273,296 @@
         const statusOverlay = document.getElementById('status-overlay');
         const pastSection = document.getElementById('past-colors-section');
         const upcomingSection = document.getElementById('upcoming-colors-section');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const pastStatusLabel = document.getElementById('past-status-label');
+        const upcomingStatusLabel = document.getElementById('upcoming-status-label');
         let updateTimerInterval = null;
 
-        // Color sequence for wristband
-        const colorSequence = [
-            { name: 'pink', hex: '#FFB6C1' },
-            { name: 'yellow', hex: '#FFFF00' },
-            { name: 'orange', hex: '#FFA500' },
-            { name: 'green', hex: '#00FF00' },
-            { name: 'aqua', hex: '#00FFFF' },
-            { name: 'silver', hex: '#C0C0C0' },
-            { name: 'brown', hex: '#8B4513' },
-            { name: 'blue', hex: '#0000FF' },
-            { name: 'red', hex: '#FF0000' }
-        ];
+        // TEST MODE: Set a specific time for testing (null = use real time)
+        // Example: "19:44" to test at 7:44 PM
+        // Set to null to use actual system time
+        let testTime = "13:55";
+
+        // Color hex mapping
+        const colorHexMap = {
+            'pink': '#FFB6C1',
+            'yellow': '#FFFF00',
+            'orange': '#FFA500',
+            'green': '#00FF00',
+            'aqua': '#00FFFF',
+            'silver': '#C0C0C0',
+            'brown': '#8B4513',
+            'blue': '#0000FF',
+            'red': '#FF0000'
+        };
+
+        // Strict lookup table - direct mapping from end time to wristband color
+        const wristbandSchedule = {
+            "10:30": "pink",
+            "10:45": "yellow",
+            "11:00": "orange",
+            "11:15": "green",
+            "11:30": "aqua",
+            "11:45": "silver",
+            "12:00": "brown",
+            "12:15": "blue",
+            "12:30": "red",
+            "12:45": "pink",
+            "13:00": "yellow",
+            "13:15": "orange",
+            "13:30": "green",
+            "13:45": "aqua",
+            "14:00": "silver",
+            "14:15": "brown",
+            "14:30": "blue",
+            "14:45": "red",
+            "15:00": "pink",
+            "15:15": "yellow",
+            "15:30": "orange",
+            "15:45": "green",
+            "16:00": "aqua",
+            "16:15": "silver",
+            "16:30": "brown",
+            "16:45": "blue",
+            "17:00": "red",
+            "17:15": "pink",
+            "17:30": "yellow",
+            "17:45": "orange",
+            "18:00": "green",
+            "18:15": "aqua",
+            "18:30": "silver",
+            "18:45": "brown",
+            "19:00": "blue",
+            "19:15": "red",
+            "19:30": "pink",
+            "19:45": "yellow",
+            "20:00": "orange",
+            "20:15": "green",
+            "20:30": "aqua"
+        };
+
+        // Get all schedule times as sorted array for quick lookup
+        const scheduleTimesArray = Object.keys(wristbandSchedule).sort();
 
         // Format time as HH:MM
         function formatTime(hours, minutes) {
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
 
-        // Get color info for a specific interval index
-        function getColorInfoForIndex(intervalIndex) {
-            const colorIndex = intervalIndex % colorSequence.length;
-            const color = colorSequence[colorIndex];
-
-            // Calculate the time this color starts
-            const startMinutes = 10 * 60 + 30; // 10:30 in minutes
-            const colorStartMinutes = startMinutes + (intervalIndex * 15);
-            const totalMinutes = colorStartMinutes % (24 * 60);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-
-            return {
-                ...color,
-                time: formatTime(hours, minutes),
-                intervalIndex
-            };
+        // Get color info for a specific time (HH:MM format)
+        function getColorInfoForTime(timeString) {
+            if (wristbandSchedule[timeString]) {
+                const colorName = wristbandSchedule[timeString];
+                return {
+                    name: colorName,
+                    hex: colorHexMap[colorName],
+                    time: timeString
+                };
+            }
+            return null;
         }
 
-        // Calculate current color index and recent color
-        function getCurrentColorInfo() {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
+        // Find the current and next wristband times based on clock time
+        function findCurrentAndNextScheduleTimes() {
+            let currentTimeString;
 
-            const totalMinutes = hours * 60 + minutes;
-            const startMinutes = 10 * 60 + 30; // 10:30
-
-            let minutesSinceStart = totalMinutes - startMinutes;
-
-            if (minutesSinceStart < 0) {
-                minutesSinceStart += 24 * 60;
+            if (testTime) {
+                // Use test time if provided
+                currentTimeString = testTime;
+            } else {
+                // Use actual system time
+                const now = new Date();
+                const currentHours = now.getHours();
+                const currentMinutes = now.getMinutes();
+                currentTimeString = formatTime(currentHours, currentMinutes);
             }
 
-            const currentIntervalIndex = Math.floor(minutesSinceStart / 15);
-            const recentIntervalIndex = currentIntervalIndex - 1; // Recently ended color
+            // Find the nearest schedule times
+            let currentScheduleTime = null;
+            let nextScheduleTime = null;
 
-            return {
-                current: currentIntervalIndex,
-                recent: recentIntervalIndex
-            };
+            // Find the current running time (most recent time that has already passed)
+            for (let i = scheduleTimesArray.length - 1; i >= 0; i--) {
+                if (scheduleTimesArray[i] <= currentTimeString) {
+                    currentScheduleTime = scheduleTimesArray[i];
+                    // Next schedule time is the one after current
+                    if (i + 1 < scheduleTimesArray.length) {
+                        nextScheduleTime = scheduleTimesArray[i + 1];
+                    }
+                    break;
+                }
+            }
+
+            // If no time found (we're before 10:30), wrap to end of schedule
+            if (!currentScheduleTime) {
+                currentScheduleTime = scheduleTimesArray[scheduleTimesArray.length - 1]; // Last time of previous day
+                nextScheduleTime = scheduleTimesArray[0]; // First time of today
+            }
+
+            return { currentScheduleTime, nextScheduleTime };
         }
 
-        // Calculate time remaining for a color interval
-        function getTimeRemainingForInterval(intervalIndex) {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
 
-            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-            const startMinutes = 10 * 60 + 30; // 10:30
-            const startSeconds = startMinutes * 60;
+        // Calculate time remaining until a specific end time
+        function getTimeRemainingUntil(endTimeString) {
+            const [endHours, endMinutes] = endTimeString.split(':').map(Number);
 
-            let secondsSinceStart = totalSeconds - startSeconds;
-            if (secondsSinceStart < 0) {
-                secondsSinceStart += 24 * 3600;
+            // Convert end time to seconds from midnight
+            const endTimeSeconds = endHours * 3600 + endMinutes * 60;
+
+            let nowSeconds;
+            if (testTime) {
+                // Use test time (seconds only, no sub-second precision for test)
+                const [testHours, testMinutes] = testTime.split(':').map(Number);
+                nowSeconds = testHours * 3600 + testMinutes * 60;
+            } else {
+                // Use actual system time
+                const now = new Date();
+                nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
             }
 
-            // Find which interval we're in and time remaining in current
-            const currentIntervalIndex = Math.floor(secondsSinceStart / 900); // 900 seconds = 15 minutes
-            const secondsInCurrentInterval = secondsSinceStart % 900;
-            const secondsRemaining = 900 - secondsInCurrentInterval;
+            let secondsRemaining = endTimeSeconds - nowSeconds;
 
-            // For upcoming intervals, calculate when they'll end
-            const intervalsAhead = intervalIndex - currentIntervalIndex;
-            const totalSecondsForInterval = intervalsAhead * 900 + secondsRemaining;
+            // If end time is in the past today, it's for tomorrow
+            if (secondsRemaining <= 0) {
+                secondsRemaining += 24 * 3600;
+            }
 
-            const mins = Math.floor(totalSecondsForInterval / 60);
-            const secs = totalSecondsForInterval % 60;
+            const mins = Math.floor(secondsRemaining / 60);
+            const secs = secondsRemaining % 60;
 
             return {
                 display: `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`,
-                seconds: totalSecondsForInterval
+                seconds: secondsRemaining
             };
         }
 
-        // Update wristband banner
-        function updateWristband() {
-            const colorInfo = getCurrentColorInfo();
+        // Calculate minutes since a time has passed
+        function getMinutesAgo(endTimeString) {
+            const [endHours, endMinutes] = endTimeString.split(':').map(Number);
+            const endTimeSeconds = endHours * 3600 + endMinutes * 60;
 
-            // Update past 3 colors section (most recent 3)
-            pastSection.innerHTML = '';
-            for (let i = -3; i < 0; i++) {
-                const pastColor = getColorInfoForIndex(colorInfo.current + i);
-
-                const item = document.createElement('div');
-                item.className = 'past-item';
-
-                const circle = document.createElement('div');
-                circle.className = 'past-color-circle';
-                circle.style.backgroundColor = pastColor.hex;
-
-                const timeLabel = document.createElement('div');
-                timeLabel.className = 'past-time';
-                timeLabel.textContent = pastColor.time;
-
-                item.appendChild(circle);
-                item.appendChild(timeLabel);
-                pastSection.appendChild(item);
+            let nowSeconds;
+            if (testTime) {
+                const [testHours, testMinutes] = testTime.split(':').map(Number);
+                nowSeconds = testHours * 3600 + testMinutes * 60;
+            } else {
+                const now = new Date();
+                nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
             }
 
-            // Update upcoming 3 colors section
-            upcomingSection.innerHTML = '';
-            for (let i = 0; i < 3; i++) {
-                const upcomingColor = getColorInfoForIndex(colorInfo.current + i);
-                const timeRemaining = getTimeRemainingForInterval(colorInfo.current + i);
+            let secondsAgo = nowSeconds - endTimeSeconds;
 
-                const item = document.createElement('div');
-                item.className = 'upcoming-item';
-                item.dataset.intervalIndex = colorInfo.current + i;
-                item.dataset.endTime = timeRemaining.seconds;
-
-                const circle = document.createElement('div');
-                circle.className = 'upcoming-color-circle';
-                circle.style.backgroundColor = upcomingColor.hex;
-
-                const timeLabel = document.createElement('div');
-                timeLabel.className = 'upcoming-time';
-                timeLabel.textContent = upcomingColor.time;
-
-                const timer = document.createElement('div');
-                timer.className = 'upcoming-timer';
-                timer.textContent = timeRemaining.display;
-                timer.dataset.timerElement = 'true';
-
-                item.appendChild(circle);
-                item.appendChild(timeLabel);
-                item.appendChild(timer);
-                upcomingSection.appendChild(item);
+            // If time is in the future, it was from yesterday
+            if (secondsAgo < 0) {
+                secondsAgo += 24 * 3600;
             }
+
+            const minutesAgo = Math.floor(secondsAgo / 60);
+            return minutesAgo;
         }
 
-        // Update timers on all upcoming items
-        function updateUpcomingTimers() {
-            const timerElements = upcomingSection.querySelectorAll('[data-timer-element="true"]');
-            timerElements.forEach((timerEl) => {
-                const item = timerEl.parentElement;
-                const initialEndTime = parseInt(item.dataset.endTime);
+        // Update current time display
+        function updateCurrentTime() {
+            let hours, minutes, seconds;
 
-                // Calculate elapsed time since last update
+            if (testTime) {
+                // Use test time with fake seconds
+                [hours, minutes] = testTime.split(':');
+                seconds = '00';
+            } else {
+                // Use actual system time
                 const now = new Date();
-                const hours = now.getHours();
-                const minutes = now.getMinutes();
-                const seconds = now.getSeconds();
+                hours = String(now.getHours()).padStart(2, '0');
+                minutes = String(now.getMinutes()).padStart(2, '0');
+                seconds = String(now.getSeconds()).padStart(2, '0');
+            }
 
-                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                const startMinutes = 10 * 60 + 30;
-                const startSeconds = startMinutes * 60;
+            currentTimeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }
 
-                let secondsSinceStart = totalSeconds - startSeconds;
-                if (secondsSinceStart < 0) {
-                    secondsSinceStart += 24 * 3600;
-                }
 
-                const currentIntervalIndex = Math.floor(secondsSinceStart / 900);
-                const intervalIndex = parseInt(item.dataset.intervalIndex);
-                const intervalsAhead = intervalIndex - currentIntervalIndex;
-                const secondsInCurrentInterval = secondsSinceStart % 900;
-                const secondsRemaining = 900 - secondsInCurrentInterval;
-                const totalSecondsForInterval = intervalsAhead * 900 + secondsRemaining;
+        // Update wristband banner
+        function updateWristband() {
+            const { currentScheduleTime, nextScheduleTime } = findCurrentAndNextScheduleTimes();
 
-                const mins = Math.floor(totalSecondsForInterval / 60);
-                const secs = totalSecondsForInterval % 60;
-                timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            });
+            // Update LEFT SIDE - 3 columns: "Jump Time Over" | Color Circle + Time | "Ended X mins ago"
+            pastSection.innerHTML = '';
+            const currentColor = getColorInfoForTime(currentScheduleTime);
+            const timeRemainingForCurrent = getTimeRemainingUntil(currentScheduleTime);
+            const minutesAgo = getMinutesAgo(currentScheduleTime);
+
+            // Column 2: Color circle with end time below
+            const pastItem = document.createElement('div');
+            pastItem.className = 'past-item';
+
+            const pastCircle = document.createElement('div');
+            pastCircle.className = 'past-color-circle';
+            pastCircle.style.backgroundColor = currentColor.hex;
+
+            const pastTimeLabel = document.createElement('div');
+            pastTimeLabel.className = 'past-time';
+            pastTimeLabel.textContent = currentColor.time;
+
+            pastItem.appendChild(pastCircle);
+            pastItem.appendChild(pastTimeLabel);
+            pastSection.appendChild(pastItem);
+
+            // Column 3: "Ended X mins ago" text
+            pastStatusLabel.textContent = `Ended ${minutesAgo} mins ago`;
+            pastStatusLabel.style.color = '#888';
+
+            // Update RIGHT SIDE - 3 columns: "Upcoming Wristbands" | Color Circle + Time | "Ending in X mins"
+            upcomingSection.innerHTML = '';
+            const nextColor = getColorInfoForTime(nextScheduleTime);
+            const nextColorTimeRemaining = getTimeRemainingUntil(nextScheduleTime);
+
+            // Column 2: Color circle with end time below
+            const upcomingItem = document.createElement('div');
+            upcomingItem.className = 'upcoming-item';
+            upcomingItem.dataset.endTime = nextScheduleTime;
+
+            const upcomingCircle = document.createElement('div');
+            upcomingCircle.className = 'upcoming-color-circle';
+            upcomingCircle.style.backgroundColor = nextColor.hex;
+
+            const upcomingTimeLabel = document.createElement('div');
+            upcomingTimeLabel.className = 'upcoming-time';
+            upcomingTimeLabel.textContent = nextColor.time;
+
+            upcomingItem.appendChild(upcomingCircle);
+            upcomingItem.appendChild(upcomingTimeLabel);
+            upcomingSection.appendChild(upcomingItem);
+
+            // Column 3: "Ending in X mins" with countdown timer
+            const upcomingTimer = document.createElement('div');
+            upcomingTimer.className = 'upcoming-timer';
+            upcomingTimer.textContent = nextColorTimeRemaining.display;
+            upcomingTimer.dataset.timerElement = 'true';
+            upcomingTimer.dataset.endTime = nextScheduleTime;
+
+            const upcomingRemainingLabel = document.createElement('div');
+            upcomingRemainingLabel.className = 'upcoming-time-remaining';
+            upcomingRemainingLabel.textContent = 'Ending in';
+
+            upcomingStatusLabel.innerHTML = '';
+            upcomingStatusLabel.appendChild(upcomingRemainingLabel);
+            upcomingStatusLabel.appendChild(upcomingTimer);
+            upcomingStatusLabel.style.color = '#0f0';
+            upcomingStatusLabel.style.display = 'flex';
+            upcomingStatusLabel.style.flexDirection = 'column';
+            upcomingStatusLabel.style.gap = '8px';
+        }
+
+        // Update timers on all items (both past/current and upcoming)
+        function updateUpcomingTimers() {
+            // Update timers for upcoming section
+            const timerElement = document.querySelector('[data-timer-element="true"]');
+            if (timerElement) {
+                const endTime = timerElement.dataset.endTime; // This is the time string like "19:30"
+                const timeRemaining = getTimeRemainingUntil(endTime);
+                timerElement.textContent = timeRemaining.display;
+            }
         }
 
         let ws = null;
@@ -598,11 +759,13 @@
 
         // Initialize wristband banner
         updateWristband();
+        updateCurrentTime();
 
-        // Update timers every second
+        // Update timers and time display every second
         if (updateTimerInterval) clearInterval(updateTimerInterval);
         updateTimerInterval = setInterval(() => {
             updateUpcomingTimers();
+            updateCurrentTime();
         }, 1000);
 
         // Send status updates periodically
