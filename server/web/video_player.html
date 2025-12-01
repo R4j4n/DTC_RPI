@@ -49,6 +49,143 @@
         .status-active {
             display: block !important;
         }
+
+        #wristband-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            font-family: monospace;
+            z-index: 999;
+            backdrop-filter: blur(10px);
+        }
+
+        #past-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        #past-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        #past-colors-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .past-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .past-color-circle {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .past-time {
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+        }
+
+        #logo-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+            padding: 0 20px;
+        }
+
+        #logo-section img {
+            max-height: 110px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        #upcoming-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        #upcoming-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        #upcoming-colors-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upcoming-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .upcoming-item:hover {
+            opacity: 1;
+        }
+
+        .upcoming-color-circle {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .upcoming-time {
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+        }
+
+        .upcoming-timer {
+            font-size: 14px;
+            color: #0f0;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -58,9 +195,214 @@
 
     <div id="status-overlay"></div>
 
+    <div id="wristband-banner">
+        <div id="past-section">
+            <div id="past-label">Recent Jump Times</div>
+            <div id="past-colors-section"></div>
+        </div>
+
+        <div id="logo-section">
+            <img src="logo.png" alt="Company Logo">
+        </div>
+
+        <div id="upcoming-section">
+            <div id="upcoming-label">Upcoming Wristbands</div>
+            <div id="upcoming-colors-section"></div>
+        </div>
+    </div>
+
     <script>
         const video = document.getElementById('video-player');
         const statusOverlay = document.getElementById('status-overlay');
+        const pastSection = document.getElementById('past-colors-section');
+        const upcomingSection = document.getElementById('upcoming-colors-section');
+        let updateTimerInterval = null;
+
+        // Color sequence for wristband
+        const colorSequence = [
+            { name: 'pink', hex: '#FFB6C1' },
+            { name: 'yellow', hex: '#FFFF00' },
+            { name: 'orange', hex: '#FFA500' },
+            { name: 'green', hex: '#00FF00' },
+            { name: 'aqua', hex: '#00FFFF' },
+            { name: 'silver', hex: '#C0C0C0' },
+            { name: 'brown', hex: '#8B4513' },
+            { name: 'blue', hex: '#0000FF' },
+            { name: 'red', hex: '#FF0000' }
+        ];
+
+        // Format time as HH:MM
+        function formatTime(hours, minutes) {
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Get color info for a specific interval index
+        function getColorInfoForIndex(intervalIndex) {
+            const colorIndex = intervalIndex % colorSequence.length;
+            const color = colorSequence[colorIndex];
+
+            // Calculate the time this color starts
+            const startMinutes = 10 * 60 + 30; // 10:30 in minutes
+            const colorStartMinutes = startMinutes + (intervalIndex * 15);
+            const totalMinutes = colorStartMinutes % (24 * 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            return {
+                ...color,
+                time: formatTime(hours, minutes),
+                intervalIndex
+            };
+        }
+
+        // Calculate current color index and recent color
+        function getCurrentColorInfo() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            const totalMinutes = hours * 60 + minutes;
+            const startMinutes = 10 * 60 + 30; // 10:30
+
+            let minutesSinceStart = totalMinutes - startMinutes;
+
+            if (minutesSinceStart < 0) {
+                minutesSinceStart += 24 * 60;
+            }
+
+            const currentIntervalIndex = Math.floor(minutesSinceStart / 15);
+            const recentIntervalIndex = currentIntervalIndex - 1; // Recently ended color
+
+            return {
+                current: currentIntervalIndex,
+                recent: recentIntervalIndex
+            };
+        }
+
+        // Calculate time remaining for a color interval
+        function getTimeRemainingForInterval(intervalIndex) {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+            const startMinutes = 10 * 60 + 30; // 10:30
+            const startSeconds = startMinutes * 60;
+
+            let secondsSinceStart = totalSeconds - startSeconds;
+            if (secondsSinceStart < 0) {
+                secondsSinceStart += 24 * 3600;
+            }
+
+            // Find which interval we're in and time remaining in current
+            const currentIntervalIndex = Math.floor(secondsSinceStart / 900); // 900 seconds = 15 minutes
+            const secondsInCurrentInterval = secondsSinceStart % 900;
+            const secondsRemaining = 900 - secondsInCurrentInterval;
+
+            // For upcoming intervals, calculate when they'll end
+            const intervalsAhead = intervalIndex - currentIntervalIndex;
+            const totalSecondsForInterval = intervalsAhead * 900 + secondsRemaining;
+
+            const mins = Math.floor(totalSecondsForInterval / 60);
+            const secs = totalSecondsForInterval % 60;
+
+            return {
+                display: `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`,
+                seconds: totalSecondsForInterval
+            };
+        }
+
+        // Update wristband banner
+        function updateWristband() {
+            const colorInfo = getCurrentColorInfo();
+
+            // Update past 3 colors section (most recent 3)
+            pastSection.innerHTML = '';
+            for (let i = -3; i < 0; i++) {
+                const pastColor = getColorInfoForIndex(colorInfo.current + i);
+
+                const item = document.createElement('div');
+                item.className = 'past-item';
+
+                const circle = document.createElement('div');
+                circle.className = 'past-color-circle';
+                circle.style.backgroundColor = pastColor.hex;
+
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'past-time';
+                timeLabel.textContent = pastColor.time;
+
+                item.appendChild(circle);
+                item.appendChild(timeLabel);
+                pastSection.appendChild(item);
+            }
+
+            // Update upcoming 3 colors section
+            upcomingSection.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const upcomingColor = getColorInfoForIndex(colorInfo.current + i);
+                const timeRemaining = getTimeRemainingForInterval(colorInfo.current + i);
+
+                const item = document.createElement('div');
+                item.className = 'upcoming-item';
+                item.dataset.intervalIndex = colorInfo.current + i;
+                item.dataset.endTime = timeRemaining.seconds;
+
+                const circle = document.createElement('div');
+                circle.className = 'upcoming-color-circle';
+                circle.style.backgroundColor = upcomingColor.hex;
+
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'upcoming-time';
+                timeLabel.textContent = upcomingColor.time;
+
+                const timer = document.createElement('div');
+                timer.className = 'upcoming-timer';
+                timer.textContent = timeRemaining.display;
+                timer.dataset.timerElement = 'true';
+
+                item.appendChild(circle);
+                item.appendChild(timeLabel);
+                item.appendChild(timer);
+                upcomingSection.appendChild(item);
+            }
+        }
+
+        // Update timers on all upcoming items
+        function updateUpcomingTimers() {
+            const timerElements = upcomingSection.querySelectorAll('[data-timer-element="true"]');
+            timerElements.forEach((timerEl) => {
+                const item = timerEl.parentElement;
+                const initialEndTime = parseInt(item.dataset.endTime);
+
+                // Calculate elapsed time since last update
+                const now = new Date();
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+
+                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                const startMinutes = 10 * 60 + 30;
+                const startSeconds = startMinutes * 60;
+
+                let secondsSinceStart = totalSeconds - startSeconds;
+                if (secondsSinceStart < 0) {
+                    secondsSinceStart += 24 * 3600;
+                }
+
+                const currentIntervalIndex = Math.floor(secondsSinceStart / 900);
+                const intervalIndex = parseInt(item.dataset.intervalIndex);
+                const intervalsAhead = intervalIndex - currentIntervalIndex;
+                const secondsInCurrentInterval = secondsSinceStart % 900;
+                const secondsRemaining = 900 - secondsInCurrentInterval;
+                const totalSecondsForInterval = intervalsAhead * 900 + secondsRemaining;
+
+                const mins = Math.floor(totalSecondsForInterval / 60);
+                const secs = totalSecondsForInterval % 60;
+                timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            });
+        }
 
         let ws = null;
         let reconnectInterval = null;
@@ -254,12 +596,26 @@
         // Initialize WebSocket connection
         connectWebSocket();
 
+        // Initialize wristband banner
+        updateWristband();
+
+        // Update timers every second
+        if (updateTimerInterval) clearInterval(updateTimerInterval);
+        updateTimerInterval = setInterval(() => {
+            updateUpcomingTimers();
+        }, 1000);
+
         // Send status updates periodically
         setInterval(() => {
             if (!video.paused) {
                 sendStatus();
             }
         }, 5000);
+
+        // Update wristband every 30 seconds to check for color changes
+        setInterval(() => {
+            updateWristband();
+        }, 30000);
     </script>
 </body>
 </html>
