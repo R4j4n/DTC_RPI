@@ -75,11 +75,11 @@
         #past-section {
             display: flex;
             align-items: stretch;
-            justify-content: flex-end;
-            gap: 25px;
+            justify-content: flex-start;
+            gap: 30px;
             flex: 1;
             min-width: 0;
-            padding-right: 20px;
+            padding-left: 40px;
         }
 
         .past-column {
@@ -143,13 +143,13 @@
         }
 
         #logo-section {
-            flex: 0 1 auto;
+            flex: 0 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 150px;
-            max-width: 250px;
-            padding: 0 30px;
+            min-width: 200px;
+            max-width: 300px;
+            padding: 0 50px;
         }
 
         #logo-section img {
@@ -176,11 +176,11 @@
         #upcoming-section {
             display: flex;
             align-items: stretch;
-            justify-content: flex-start;
-            gap: 25px;
+            justify-content: flex-end;
+            gap: 30px;
             flex: 1;
             min-width: 0;
-            padding-left: 20px;
+            padding-right: 40px;
         }
 
         .upcoming-column {
@@ -348,7 +348,7 @@
         </div>
 
         <div id="logo-section">
-            <img src="logo.png" alt="Company Logo">
+            <img id="company-logo" src="./logo.png" alt="Company Logo">
         </div>
 
         <div id="upcoming-section">
@@ -854,6 +854,31 @@
         // Initialize wristband banner
         updateWristband();
         updateCurrentTime();
+
+        // Logo loading with fallback
+        const logo = document.getElementById('company-logo');
+        const logoPaths = [
+            './logo.png',
+            'logo.png',
+            '/logo.png',
+            '/web/logo.png'
+        ];
+        let currentLogoIndex = 0;
+
+        logo.onerror = function() {
+            currentLogoIndex++;
+            if (currentLogoIndex < logoPaths.length) {
+                console.log('Trying logo path:', logoPaths[currentLogoIndex]);
+                this.src = logoPaths[currentLogoIndex];
+            } else {
+                console.error('Failed to load logo from all paths');
+                this.style.display = 'none';
+            }
+        };
+
+        logo.onload = function() {
+            console.log('Logo loaded successfully from:', this.src);
+        };
 
         // Update timers and time display every second
         if (updateTimerInterval) clearInterval(updateTimerInterval);
