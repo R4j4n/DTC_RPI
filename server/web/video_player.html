@@ -74,28 +74,31 @@
 
         #past-section {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
+            align-items: stretch;
+            justify-content: flex-end;
+            gap: 25px;
             flex: 1;
             min-width: 0;
+            padding-right: 20px;
         }
 
         .past-column {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
         }
 
         .past-column-label {
-            font-size: clamp(16px, 2.5vw, 24px);
+            font-size: clamp(18px, 2.5vw, 26px);
             color: #fff;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             font-weight: 700;
             text-align: center;
             white-space: nowrap;
+            margin-bottom: 5px;
         }
 
         #past-colors-section {
@@ -108,7 +111,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             opacity: 0.85;
             transition: all 0.3s ease;
         }
@@ -124,17 +127,19 @@
         }
 
         .past-time {
-            font-size: clamp(18px, 2.5vw, 26px);
-            color: #0f0;
+            font-size: clamp(20px, 2.8vw, 28px);
+            color: #00ff00;
             text-align: center;
             font-weight: 700;
             font-family: monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
 
         .past-time-ago {
-            font-size: clamp(16px, 2vw, 22px);
-            color: #aaa;
+            font-size: clamp(17px, 2.2vw, 24px);
+            color: #999;
             text-align: center;
+            font-weight: 600;
         }
 
         #logo-section {
@@ -170,28 +175,31 @@
 
         #upcoming-section {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 25px;
             flex: 1;
             min-width: 0;
+            padding-left: 20px;
         }
 
         .upcoming-column {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
         }
 
         .upcoming-column-label {
-            font-size: clamp(16px, 2.5vw, 24px);
+            font-size: clamp(18px, 2.5vw, 26px);
             color: #fff;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             font-weight: 700;
             text-align: center;
             white-space: nowrap;
+            margin-bottom: 5px;
         }
 
         #upcoming-colors-section {
@@ -204,7 +212,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             opacity: 0.9;
             transition: all 0.3s ease;
         }
@@ -225,25 +233,28 @@
         }
 
         .upcoming-time {
-            font-size: clamp(18px, 2.5vw, 26px);
-            color: #0f0;
+            font-size: clamp(20px, 2.8vw, 28px);
+            color: #00ff00;
             text-align: center;
             font-weight: 700;
             font-family: monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
 
         .upcoming-timer {
-            font-size: clamp(18px, 2.5vw, 26px);
-            color: #0f0;
+            font-size: clamp(20px, 2.8vw, 28px);
+            color: #00ff00;
             font-weight: 700;
             text-align: center;
             font-family: monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
 
         .upcoming-time-remaining {
-            font-size: clamp(16px, 2vw, 22px);
-            color: #aaa;
+            font-size: clamp(17px, 2.2vw, 24px);
+            color: #999;
             text-align: center;
+            font-weight: 600;
         }
 
         /* Responsive adjustments */
@@ -364,7 +375,7 @@
         // TEST MODE: Set a specific time for testing (null = use real time)
         // Example: "19:44" to test at 7:44 PM
         // Set to null to use actual system time
-        let testTime = "13:55";
+        let testTime = null;
 
         // Color hex mapping
         const colorHexMap = {
