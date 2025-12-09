@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import threading
 import time
 from datetime import datetime
@@ -14,6 +15,7 @@ SCHEDULE_FILE = "schedule.json"
 from src.hdmi_controllers import CECController
 from src.routers.inputs_switch import load_current_input
 from src.video_manager import video_manager
+from src.file_utils import atomic_write_json, safe_read_json
 
 
 class TVController:
@@ -27,10 +29,22 @@ class TVController:
         switch_handler = CECController()
         current_device = load_current_input()
         print(f"Turning on TV at {datetime.now()}")
-        
-        # Turn on TV (keep your working approach)
-        result = os.system('echo "on 0" | cec-client -s -d 1')
-        print(f"TV turn on command result: {result}")
+
+        # Turn on TV using subprocess instead of os.system
+        try:
+            result = subprocess.run(
+                ["bash", "-c", 'echo "on 0" | cec-client -s -d 1'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            print(f"TV turn on command result: {result.returncode}")
+        except subprocess.TimeoutExpired:
+            print("TV turn on command timed out")
+            result = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="Timeout")
+        except Exception as e:
+            print(f"Error turning on TV: {e}")
+            result = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr=str(e))
 
         # Wait a moment for TV to be ready
         time.sleep(3)
@@ -50,18 +64,33 @@ class TVController:
 
         # Play the last played content
         video_manager.load_last_played()
-        return result
+        return result.returncode
 
     def turn_off_tv(self):
+        print(f"Turning off TV at {datetime.now()}")
 
-        print(f"Turning off TV at {datetime.now()}")  # Debug log
-        result = os.system('echo "standby 0" | cec-client -s -d 1')
-        print(f"TV turn off command result: {result}")  # Debug log
+        # Stop the item which is being currently played
+        try:
+            video_manager.stop()
+        except Exception as e:
+            print(f"Error stopping video: {e}")
 
-        # stop the the item which is being currently played
-        video_manager.stop()
-
-        return result
+        # Turn off TV using subprocess instead of os.system
+        try:
+            result = subprocess.run(
+                ["bash", "-c", 'echo "standby 0" | cec-client -s -d 1'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            print(f"TV turn off command result: {result.returncode}")
+            return result.returncode
+        except subprocess.TimeoutExpired:
+            print("TV turn off command timed out")
+            return 1
+        except Exception as e:
+            print(f"Error turning off TV: {e}")
+            return 1
 
     def run_scheduler(self):
         while True:
@@ -82,13 +111,15 @@ class TVController:
             schedule.clear(day)
 
             if times.turn_on_time:
+                # Fix lambda variable capture bug by using default argument
                 schedule.every().day.at(times.turn_on_time).do(
-                    lambda: self.turn_on_tv() if self.should_run_today(day) else None
+                    lambda day_tag=day: self.turn_on_tv() if self.should_run_today(day_tag) else None
                 ).tag(day)
 
             if times.turn_off_time:
+                # Fix lambda variable capture bug by using default argument
                 schedule.every().day.at(times.turn_off_time).do(
-                    lambda: self.turn_off_tv() if self.should_run_today(day) else None
+                    lambda day_tag=day: self.turn_off_tv() if self.should_run_today(day_tag) else None
                 ).tag(day)
 
     def apply_schedule(self):
@@ -98,17 +129,15 @@ class TVController:
                 self.schedule_day(day, DaySchedule(**times))
 
     def save_schedule(self):
-        with open(SCHEDULE_FILE, "w") as file:
-            json.dump(self.current_schedule.model_dump(), file)
+        atomic_write_json(SCHEDULE_FILE, self.current_schedule.model_dump())
 
     def load_schedule(self) -> Optional[WeeklySchedule]:
-        if os.path.exists(SCHEDULE_FILE):
-            try:
-                with open(SCHEDULE_FILE, "r") as file:
-                    schedule_data = json.load(file)
+        try:
+            schedule_data = safe_read_json(SCHEDULE_FILE, default=None)
+            if schedule_data:
                 return WeeklySchedule(**schedule_data)
-            except Exception as e:
-                print(f"Error loading schedule: {e}")
+        except Exception as e:
+            print(f"Error loading schedule: {e}")
         return None
 
     def get_tv_status(self) -> bool:
@@ -117,15 +146,24 @@ class TVController:
         Returns True if TV is on, False if TV is off/standby.
         """
         try:
-            result = os.popen('echo "pow 0" | cec-client -s -d 1').read()
+            result = subprocess.run(
+                ["bash", "-c", 'echo "pow 0" | cec-client -s -d 1'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
 
-            if "power status: on" in result.lower():
+            output = result.stdout.lower()
+            if "power status: on" in output:
                 return True
-            elif "power status: standby" in result.lower():
+            elif "power status: standby" in output:
                 return False
             else:
-                print(f"Unexpected power status response: {result}")
+                print(f"Unexpected power status response: {result.stdout}")
                 return False
+        except subprocess.TimeoutExpired:
+            print("TV status query timed out")
+            return False
         except Exception as e:
             print(f"Error getting TV status: {e}")
             return False

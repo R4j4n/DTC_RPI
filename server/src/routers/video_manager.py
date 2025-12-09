@@ -97,15 +97,31 @@ async def upload_video(
 async def play_video(request: PlayRequest):
     """Play a video by name."""
     try:
-        file_path = video_manager.upload_dir / request.video_name
+        # Sanitize video name to prevent path traversal
+        video_name = Path(request.video_name).name  # Extract only filename
+        if ".." in request.video_name or "/" in request.video_name or "\\" in request.video_name:
+            raise HTTPException(status_code=400, detail="Invalid video name")
+
+        file_path = video_manager.upload_dir / video_name
+
+        # Verify the resolved path is still within upload directory
+        if not file_path.resolve().is_relative_to(video_manager.upload_dir.resolve()):
+            raise HTTPException(status_code=400, detail="Invalid video path")
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"Video '{video_name}' not found")
+
         video_manager.load_video(str(file_path))
         video_manager.play()
         return {
             "status": "success",
-            "message": f"Playing {request.video_name} in loop mode",
+            "message": f"Playing {video_name} in loop mode",
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to play video: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router_main.post("/pause")
@@ -195,7 +211,6 @@ async def get_preview():
         compressed_path = video_manager.compressed_dir / current_video.name
 
         if not compressed_path.exists():
-
             logger.info(f"Compressing video: {video_manager.current_video}")
             video_manager.compressor.compress_video(
                 input_path=str(uploaded_video_dir),
@@ -203,7 +218,17 @@ async def get_preview():
             )
             logger.info(f"Compression complete: {video_manager.current_video}")
 
-        return StreamingResponse(open(compressed_path, "rb"), media_type="video/mp4")
+        # Use async generator to properly close file handle
+        async def iterfile():
+            with open(compressed_path, "rb") as f:
+                chunk_size = 1024 * 1024  # 1MB chunks
+                while chunk := f.read(chunk_size):
+                    yield chunk
+
+        return StreamingResponse(iterfile(), media_type="video/mp4")
+    except FileNotFoundError:
+        logger.error(f"Compressed video not found: {compressed_path}")
+        raise HTTPException(status_code=404, detail="Compressed video not found")
     except Exception as e:
         logger.error(f"Error streaming preview: {e}")
         raise HTTPException(status_code=500, detail=str(e))

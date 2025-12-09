@@ -50,9 +50,10 @@ class CECController:
             self.logger.warning("CEC adapter not detected, but attempting command anyway")
             # Don't return here - try the command anyway since detection might be unreliable
 
+        process = None
         try:
             self.logger.debug(f"Executing CEC command: {command}")
-            
+
             # Use Popen for better control over the process
             process = subprocess.Popen(
                 command,
@@ -62,22 +63,27 @@ class CECController:
                 stderr=subprocess.PIPE,
                 text=True
             )
-            
+
             stdout, stderr = process.communicate(timeout=timeout)
-            
+
             if process.returncode == 0:
                 self.logger.debug(f"CEC command successful. Output: {stdout}")
                 return True, stdout
             else:
                 self.logger.error(f"CEC command failed with return code {process.returncode}. Error: {stderr}")
                 return False, stderr
-                
+
         except subprocess.TimeoutExpired:
             self.logger.error(f"CEC command timed out after {timeout} seconds")
-            process.kill()
+            if process:
+                process.kill()
+                process.wait()  # Properly reap the zombie process
             return False, "Command timed out"
         except Exception as e:
             self.logger.error(f"CEC command execution failed: {e}")
+            if process and process.poll() is None:
+                process.kill()
+                process.wait()
             return False, str(e)
 
     def _wait_for_tv_ready(self, max_wait: int = 10) -> bool:

@@ -3,6 +3,7 @@ import os
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Response
+from src.file_utils import atomic_write_json, safe_read_json
 
 # Create router with prefix and tags
 router_cec = APIRouter(tags=["HDMI Controls"])
@@ -23,15 +24,14 @@ def initialize_router_cec_controller(controller):
 
 def load_current_input():
     try:
-        with open(CURRENT_INPUT_FILE, "r") as file:
-            return json.load(file)["current_input"]
-    except (FileNotFoundError, KeyError):
+        data = safe_read_json(CURRENT_INPUT_FILE, default={})
+        return data.get("current_input", 0)
+    except Exception:
         return 0
 
 
 def save_current_input(device_number):
-    with open(CURRENT_INPUT_FILE, "w") as file:
-        json.dump({"current_input": device_number}, file)
+    atomic_write_json(CURRENT_INPUT_FILE, {"current_input": device_number})
 
 
 @router_cec.get("/check_json")
@@ -44,9 +44,8 @@ async def check_json() -> bool:
 async def set_hdmi_map(hdmi_map: Dict[str, str]):
     """Save HDMI device mapping and update current input"""
     try:
-        # Save the HDMI map
-        with open(HDMI_DEVICES_FILE, "w") as f:
-            json.dump(hdmi_map, f, indent=2)
+        # Save the HDMI map atomically
+        atomic_write_json(HDMI_DEVICES_FILE, hdmi_map)
 
         # Find the key for "raspberry pi" and update current_input.json
         raspberry_pi_port = None
@@ -56,24 +55,18 @@ async def set_hdmi_map(hdmi_map: Dict[str, str]):
                 break
 
         # Switch TV to that HDMI
-        _cec_controller.switch_input(device_number=int(raspberry_pi_port))
+        if raspberry_pi_port:
+            _cec_controller.switch_input(device_number=int(raspberry_pi_port))
 
-        # Initialize current_input if it doesn't exist
-        current_input = {"current_input": "1"}  # Default value
-        if os.path.exists(CURRENT_INPUT_FILE):
-            try:
-                with open(CURRENT_INPUT_FILE, "r") as f:
-                    current_input = json.load(f)
-            except json.JSONDecodeError:
-                pass
+        # Load current input with safe defaults
+        current_input = safe_read_json(CURRENT_INPUT_FILE, default={"current_input": "1"})
 
         # Update current_input if raspberry pi is found
         if raspberry_pi_port:
             current_input["current_input"] = raspberry_pi_port
 
-        # Save the updated current_input
-        with open(CURRENT_INPUT_FILE, "w") as f:
-            json.dump(current_input, f, indent=2)
+        # Save the updated current_input atomically
+        atomic_write_json(CURRENT_INPUT_FILE, current_input)
 
         return Response(content="HDMI mapped Successfully", status_code=200)
 
@@ -88,13 +81,14 @@ async def fetch_hdmi_map():
         if not os.path.exists(HDMI_DEVICES_FILE):
             raise HTTPException(status_code=404, detail="HDMI devices file not found")
 
-        with open(HDMI_DEVICES_FILE, "r") as f:
-            hdmi_map = json.load(f)
+        hdmi_map = safe_read_json(HDMI_DEVICES_FILE, default={})
+        if not hdmi_map:
+            raise HTTPException(status_code=404, detail="HDMI devices file is empty or corrupted")
 
         return hdmi_map
 
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Invalid JSON in HDMI devices file")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading HDMI map: {str(e)}")
 
