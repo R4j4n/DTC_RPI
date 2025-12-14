@@ -269,3 +269,38 @@ export async function switchDevice(host, new_device) {
   });
   if (response.status === 500) console.error("Unable to switch device . . .");
 }
+
+// Device Names API functions
+export async function getDeviceNames() {
+  const response = await fetch(`${getBaseUrl()}/device-names`, {
+    headers: {
+      'skip_zrok_interstitial': '1'
+    }
+  });
+  if (!response.ok) throw new Error("Failed to fetch device names");
+  return response.json();
+}
+
+export async function updateDeviceName(host, customName) {
+  const response = await fetch(`${getBaseUrl()}/device-names`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      'skip_zrok_interstitial': '1'
+    },
+    body: JSON.stringify({ host, custom_name: customName }),
+  });
+  if (!response.ok) throw new Error("Failed to update device name");
+  return response.json();
+}
+
+export async function deleteDeviceName(host) {
+  const response = await fetch(`${getBaseUrl()}/device-names/${host}`, {
+    method: "DELETE",
+    headers: {
+      'skip_zrok_interstitial': '1'
+    }
+  });
+  if (!response.ok) throw new Error("Failed to delete device name");
+  return response.json();
+}

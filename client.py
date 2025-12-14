@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.group_router import group_router
 from routers.tv_routers import router as get_all_pis_router
+from routers.device_names_router import device_names_router
 from server.src.video_compressor import VideoCompressor
 
 app = FastAPI()
@@ -12,6 +13,7 @@ app = FastAPI()
 # Original routers
 app.include_router(get_all_pis_router, tags=["Client Router/ Get all PI's in network."])
 app.include_router(group_router, prefix="/groups", tags=["Groups"])
+app.include_router(device_names_router, prefix="/device-names", tags=["Device Names"])
 
 app.add_middleware(
     CORSMiddleware,

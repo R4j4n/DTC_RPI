@@ -21,37 +21,33 @@ export function CardWrapper({
         !status ? "bg-red-400/20" : ""
       } hover:drop-shadow-xl `}
     >
-      <CardHeader className="space-y-1">
-        <div className="flex flex-col items-center justify-between overflow-hidden">
-          <CardTitle className="w-1/2 text-xl font-bold">
-            {isGroup ? title : pi?.name}
+      <CardHeader className="space-y-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-bold truncate flex-1">
+            {isGroup ? title : (pi?.displayName || pi?.name)}
           </CardTitle>
-          <div className="w-full flex justify-between items-center">
-            <div className={`flex ${isGroup ? "justify-center w-full": "justify-start w-[78%]"} items-center mx-auto pt-4`}>
-          { !isGroup &&  <TVOnStatus tvStatus={tvStatus} /> }
-          {status ? (
-            <div className= {`${ isGroup?"text-center": "text-left"} text-slate-200 justify-end h-100% px-4 py-1 rounded-full bg-emerald-600 transition-all ease-in duration-[1] `}>
-              Active
-            </div>
-          ) : (
-            <div className= {`${ isGroup?"text-center": "text-left"} text-slate-200 justify-end h-100% rounded-full px-4 py-1 bg-rose-600 transition-all ease-in duration-[1]`}>
-              Inactive
-            </div>
-          )}
-
-          
-          </div>
           {onRefresh && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onRefresh()}
-              className="w-1/4"
+              className="ml-2 flex-shrink-0"
             >
-              <RefreshCw className="h-4 w-4 mt-4" />
+              <RefreshCw className="h-4 w-4" />
             </Button>
           )}
-         </div> 
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isGroup && <TVOnStatus tvStatus={tvStatus} />}
+          {status ? (
+            <div className="text-slate-200 px-4 py-1 rounded-full bg-emerald-600 text-sm">
+              Active
+            </div>
+          ) : (
+            <div className="text-slate-200 px-4 py-1 rounded-full bg-rose-600 text-sm">
+              Inactive
+            </div>
+          )}
         </div>
         {error && (
           <Alert variant="destructive">

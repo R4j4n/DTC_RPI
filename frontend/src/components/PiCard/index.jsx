@@ -35,9 +35,6 @@ export function PiCard({ pi }) {
       tvStatus={currentTVStatus}
       onRefresh={refreshStatus}
     >
-      <div>
-        <h3>Current Active Port: {currentActivePort}</h3>
-      </div>
       <VideoControls
         host={pi.host}
         status={status}

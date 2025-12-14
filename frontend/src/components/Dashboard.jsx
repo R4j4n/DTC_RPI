@@ -37,7 +37,7 @@ export default function Dashboard() {
         setIsAuthenticated(true);
       }
     } catch(e){
-      get_all_pis_list(check_index=-1)
+      console.error("Error loading initial Pi list:", e);
     }
   }, []);
 
@@ -47,13 +47,14 @@ export default function Dashboard() {
     setError("");
 
     try {
-      const login_response = await auth_login(firstPi, password); 
+      const login_response = await auth_login(firstPi, password);
       if (login_response.ok) {
         const data = await login_response.json();
         sessionStorage.setItem("authToken", data.token);
         setIsAuthenticated(true);
       } else {
-        setError(data.message || "Login failed. Please try again.");
+        const errorData = await login_response.json().catch(() => ({}));
+        setError(errorData.message || "Login failed. Please try again.");
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
