@@ -25,11 +25,20 @@ def wait_for_valid_ip(timeout=60):
     """Wait for a valid IP address, checking every second."""
     print("Waiting for a valid network IP...")
     start_time = time.time()
+    retry_count = 0
     while time.time() - start_time < timeout:
         ip = get_ip_address()
         if ip != "127.0.0.1":
+            print(f"Found valid IP address: {ip}")
             return ip
+
+        retry_count += 1
+        if retry_count % 10 == 0:
+            print(f"Still waiting for network connection... ({retry_count}s elapsed)")
+
         time.sleep(1)
+
+    print("WARNING: Timeout waiting for network IP, using localhost")
     return "127.0.0.1"
 
 

@@ -54,75 +54,104 @@ export function GroupControl({ group }) {
               await uploadVideo(device.host, file);
               return { device: device.name, success: true };
             } catch (err) {
-              // return { device: device.name, success: false, error: err.message };
+              return { device: device.name, success: false, error: err.message };
             }
           });
 
           const results = await Promise.all(uploadPromises);
           const failures = results.filter(r => !r.success);
-          
+
           if (failures.length > 0) {
-            const failureMessages = failures.map(f => `${f.device}: ${f.error}`).join('\n');
-            throw new Error(`Upload failed for some devices:\n${failureMessages}`);
+            const failureMessages = failures.map(f => `${f.device}: ${f.error}`).join(', ');
+            setError(`Upload failed for: ${failureMessages}`);
+            setTimeout(() => setError(null), 10000);
           }
           break;
         }
         case 'play': {
           const videoName = args[0];
-          await Promise.all(
-            group.devices.map(device => 
-            {try{
-              playVideo(device.host, videoName)
-            } catch(error){
-            }} 
-            )
-          );
-          setCurrentVideo(videoName); 
+          const playPromises = group.devices.map(async device => {
+            try {
+              await playVideo(device.host, videoName);
+              return { device: device.name, success: true };
+            } catch (err) {
+              return { device: device.name, success: false, error: err.message };
+            }
+          });
+
+          const results = await Promise.all(playPromises);
+          const failures = results.filter(r => !r.success);
+
+          if (failures.length > 0) {
+            const failureMessages = failures.map(f => f.device).join(', ');
+            setError(`Play failed for: ${failureMessages}`);
+            setTimeout(() => setError(null), 10000);
+          }
+
+          setCurrentVideo(videoName);
           break;
         }
         case 'stop': {
-          await Promise.all(
-            group.devices.map(device => {
-            try{
-              stopVideo(device.host); console.log("Stopping the video for: ", device.host);
-            }catch(error){
-
+          const stopPromises = group.devices.map(async device => {
+            try {
+              await stopVideo(device.host);
+              return { device: device.name, success: true };
+            } catch (err) {
+              return { device: device.name, success: false, error: err.message };
             }
-            })
-          );
-          setCurrentVideo(null); 
+          });
+
+          const results = await Promise.all(stopPromises);
+          const failures = results.filter(r => !r.success);
+
+          if (failures.length > 0) {
+            const failureMessages = failures.map(f => f.device).join(', ');
+            setError(`Stop failed for: ${failureMessages}`);
+            setTimeout(() => setError(null), 10000);
+          }
+
+          setCurrentVideo(null);
           break;
         }
         case 'delete': {
           const videoName = args[0];
-          await Promise.all(
-            group.devices.map(device => {
-              try{
+          const deletePromises = group.devices.map(async device => {
+            try {
+              await deleteVideo(device.host, videoName);
+              return { device: device.name, success: true };
+            } catch (err) {
+              return { device: device.name, success: false, error: err.message };
+            }
+          });
 
-                deleteVideo(device.host, videoName)
-              }catch(error){
+          const results = await Promise.all(deletePromises);
+          const failures = results.filter(r => !r.success);
 
-              }
-            
-            })
-          );
+          if (failures.length > 0) {
+            const failureMessages = failures.map(f => f.device).join(', ');
+            setError(`Delete failed for: ${failureMessages}`);
+            setTimeout(() => setError(null), 10000);
+          }
           break;
         }
         case 'pause': {
-          await Promise.all(
-            group.devices.map(device => 
-            {
-              try{
+          const pausePromises = group.devices.map(async device => {
+            try {
+              await pauseVideo(device.host);
+              return { device: device.name, success: true };
+            } catch (err) {
+              return { device: device.name, success: false, error: err.message };
+            }
+          });
 
-                pauseVideo(device.host)
-              }catch(error){
-                
-              }
-            }  
-            
-            )
-            
-          );
+          const results = await Promise.all(pausePromises);
+          const failures = results.filter(r => !r.success);
+
+          if (failures.length > 0) {
+            const failureMessages = failures.map(f => f.device).join(', ');
+            setError(`Pause failed for: ${failureMessages}`);
+            setTimeout(() => setError(null), 10000);
+          }
           break;
         }
         default:

@@ -55,14 +55,23 @@ export async function fetchPiStatus(host) {
         'skip_zrok_interstitial': '1'
       }
     });
-    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch status: ${response.status}`);
-    }    
+      if (response.status === 401) {
+        throw new Error(`Authentication failed. Please log in again.`);
+      } else if (response.status === 503) {
+        throw new Error(`Device ${host} is offline or unreachable`);
+      } else {
+        throw new Error(`Failed to fetch status from ${host} (Error ${response.status})`);
+      }
+    }
+
+    const data = await response.json();
     console.log(data);
     return data;
   } catch (error) {
-    throw error;
+    if (error.message) throw error;
+    throw new Error(`Network error connecting to device ${host}`);
   }
 }
 
@@ -87,16 +96,24 @@ export async function uploadVideo(host, file, onProgress = () => {}) {
       const errorText = await response.text();
       console.error('Upload failed with status:', response.status);
       console.error('Error details:', errorText);
-      throw new Error(`Failed to upload video: ${response.status} ${errorText}`);
+
+      if (response.status === 503) {
+        throw new Error(`Device ${host} is offline or unreachable`);
+      } else if (response.status === 413) {
+        throw new Error('File is too large. Maximum size is 500MB.');
+      } else if (response.status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      throw new Error(`Upload failed: ${errorText || 'Unknown error'}`);
     }
     const result = await response.json();
     return result;
   } catch (error) {
     if (error.name === 'TimeoutError') {
-      throw new Error('Upload timed out. Please try again or use a smaller file.');
+      throw new Error('Upload timed out after 10 minutes. Try a smaller file or check your connection.');
     }
-    console.error('Upload error:', error);
-    throw error;
+    if (error.message) throw error;
+    throw new Error(`Network error while uploading to ${host}`);
   }
 }
 
@@ -107,7 +124,12 @@ export async function playVideo(host, videoName) {
     headers: {"AUTH": auth_token, "Content-Type": "application/json",'skip_zrok_interstitial': '1'},
     body: JSON.stringify({ video_name: videoName }),
   });
-  if (!response.ok) throw new Error("Failed to play video");
+  if (!response.ok) {
+    if (response.status === 503) {
+      throw new Error(`Device ${host} is offline`);
+    }
+    throw new Error(`Failed to play "${videoName}" on device`);
+  }
 }
 
 export async function pauseVideo(host) {

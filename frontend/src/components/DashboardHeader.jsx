@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Montserrat } from "next/font/google";
@@ -24,6 +24,11 @@ export function DashboardHeader() {
     router.refresh();
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem("authToken");
+    router.refresh();
+  };
+
   return (
     <>
       <div
@@ -39,8 +44,12 @@ export function DashboardHeader() {
             Device Names
           </Button>
           <Button onClick={() => router.refresh()}>
-            <RefreshCw className="h-3 w-4 mr-2 justify-end" />
+            <RefreshCw className="h-3 w-4 mr-2" />
             Refresh All
+          </Button>
+          <Button variant="outline" onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
           </Button>
         </div>
       </div>

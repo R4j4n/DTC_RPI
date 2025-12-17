@@ -58,6 +58,12 @@ class ServerConfig:
     ZEROCONF_SERVICE_NAME: str = os.getenv("DTC_SERVICE_NAME", "_pivideo._tcp.local.")
     ZEROCONF_TIMEOUT: int = int(os.getenv("DTC_ZEROCONF_TIMEOUT", "60"))
 
+    # WiFi Management Settings
+    WIFI_CONFIG_FILE: Path = Path(os.getenv("DTC_WIFI_CONFIG", "wifi_config.json"))
+    WIFI_CHECK_INTERVAL: int = int(os.getenv("DTC_WIFI_CHECK_INTERVAL", "30"))
+    WIFI_RECONNECT_TIMEOUT: int = int(os.getenv("DTC_WIFI_RECONNECT_TIMEOUT", "120"))
+    WIFI_MONITORING_ENABLED: bool = os.getenv("DTC_WIFI_MONITORING", "true").lower() == "true"
+
     # Allowed Video Extensions
     ALLOWED_VIDEO_EXTENSIONS: set = {".mp4", ".avi", ".mkv", ".mov"}
 

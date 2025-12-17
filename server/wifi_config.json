@@ -1,0 +1,14 @@
+{
+  "networks": [
+    {
+      "ssid": "YOUR_PRIMARY_WIFI_SSID",
+      "password": "YOUR_PRIMARY_WIFI_PASSWORD",
+      "priority": 1
+    },
+    {
+      "ssid": "YOUR_BACKUP_WIFI_SSID",
+      "password": "YOUR_BACKUP_WIFI_PASSWORD",
+      "priority": 2
+    }
+  ]
+}

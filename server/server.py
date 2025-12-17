@@ -21,6 +21,7 @@ from src.tv_controller import TVController
 from src.utils import register_service
 from src.video_manager import PlayerState, logger, video_manager
 from src.config import ServerConfig
+from src.wifi_manager import WiFiManager
 
 # Setup logging
 logging.basicConfig(
@@ -127,6 +128,7 @@ initialize_protected_routers(app, use=True)
 # Global cleanup tracker
 _zeroconf_service = None
 _tv_controller_instance = None
+_wifi_manager = None
 
 
 def cleanup_resources():
@@ -149,6 +151,14 @@ def cleanup_resources():
                 video_manager.save_last_played()
             except Exception as e:
                 server_logger.error(f"Error saving last played: {e}")
+
+        # Stop WiFi monitoring
+        if _wifi_manager:
+            server_logger.info("Stopping WiFi monitoring...")
+            try:
+                _wifi_manager.stop_monitoring()
+            except Exception as e:
+                server_logger.error(f"Error stopping WiFi manager: {e}")
 
         # Cleanup Zeroconf service
         if _zeroconf_service:
@@ -182,6 +192,31 @@ if __name__ == "__main__":
     try:
         server_logger.info("Starting DTC_RPI Server...")
         server_logger.info(f"Configuration: {ServerConfig.get_config_summary()}")
+
+        # Initialize WiFi Manager
+        if ServerConfig.WIFI_MONITORING_ENABLED:
+            server_logger.info("Initializing WiFi Manager...")
+            _wifi_manager = WiFiManager(
+                config_file=ServerConfig.WIFI_CONFIG_FILE,
+                check_interval=ServerConfig.WIFI_CHECK_INTERVAL,
+                reconnect_timeout=ServerConfig.WIFI_RECONNECT_TIMEOUT
+            )
+
+            # Check initial connection and try to connect if not connected
+            if not _wifi_manager.is_connected():
+                server_logger.warning("Not connected to WiFi, attempting to connect...")
+                if _wifi_manager.attempt_reconnection():
+                    server_logger.info("Initial WiFi connection successful")
+                else:
+                    server_logger.warning("Could not establish WiFi connection, continuing anyway...")
+            else:
+                current_ssid = _wifi_manager.get_current_ssid()
+                server_logger.info(f"Already connected to WiFi: {current_ssid}")
+
+            # Start monitoring
+            _wifi_manager.start_monitoring()
+        else:
+            server_logger.info("WiFi monitoring disabled")
 
         # Register Zeroconf service
         _zeroconf_service = register_service()
