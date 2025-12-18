@@ -1,16 +1,43 @@
 // api.js
 
+// Module-level variable to store the current location's host
+let currentLocationHost = null;
+
+/**
+ * Sets the current location host for all API calls
+ * @param {string} host - The full URL of the location server
+ */
+export function setCurrentLocationHost(host) {
+  currentLocationHost = host;
+  console.log("Base URL updated to:", host);
+}
+
+/**
+ * Gets the current location host
+ * @returns {string|null} - The current location host or null
+ */
+export function getCurrentLocationHost() {
+  return currentLocationHost;
+}
+
 // Helper function to get the base URL
 export function getBaseUrl() {
+  // Use current location if set (multi-location mode)
+  if (currentLocationHost) {
+    return currentLocationHost;
+  }
+
+  // Fallback to legacy environment variable (backward compatibility)
   const hostname = process.env.NEXT_PUBLIC_ACTIVE_SERVER_HOSTNAME;
-  console.log("Base URL being used:", hostname);
+  console.log("Base URL being used (legacy mode):", hostname);
+
   // Check if hostname is a complete URL (like from zrok)
-  if (hostname.startsWith('http://') || hostname.startsWith('https://')) {
+  if (hostname && (hostname.startsWith('http://') || hostname.startsWith('https://'))) {
     return hostname;
   }
-  
+
   // For local development, add the port
-  return `http://${hostname}:7777`;
+  return hostname ? `http://${hostname}:7777` : null;
 }
 
 // Dashboard Login function
