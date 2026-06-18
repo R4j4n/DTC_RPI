@@ -39,16 +39,23 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         screen_geom = QApplication.primaryScreen().geometry()
         self.setGeometry(screen_geom)
+        self.setAutoFillBackground(True)
+        window_palette = self.palette()
+        window_palette.setColor(QPalette.ColorRole.Window, QColor("black"))
+        self.setPalette(window_palette)
 
         self.video_frame = QFrame(self)
-        self.video_frame.setGeometry(0, 0, screen_geom.width(), screen_geom.height())
+        self.video_frame.setGeometry(0, 100, screen_geom.width(), screen_geom.height())
         self.video_frame.setAutoFillBackground(True)
         palette = self.video_frame.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor("black"))
         self.video_frame.setPalette(palette)
 
         self._build_tray()
-        self.showFullScreen()
+        # show(), not showFullScreen(): native fullscreen on macOS opens a
+        # new Space. The window is already frameless and sized to the full
+        # screen geometry, so a plain show() looks identical without that.
+        self.show()
 
         # Attach libVLC only after the native NSView exists on screen.
         self.player = VLCPlayer(self.video_frame)

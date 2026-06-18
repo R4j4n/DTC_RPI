@@ -48,9 +48,9 @@ class ControlPanel(QWidget):
         layout.addWidget(title)
         layout.addWidget(select_btn)
         layout.addWidget(schedule_btn)
+        layout.addWidget(quit_btn)
         layout.addStretch()
         layout.addWidget(self.status_label)
-        layout.addWidget(quit_btn)
 
     def set_status(self, text: str):
         self.status_label.setText(text)
