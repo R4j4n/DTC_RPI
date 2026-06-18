@@ -17,3 +17,9 @@ current_input.json
 last_played.json
 groups.json
 hdmi_devices.json
+
+# mac_player build artifacts
+mac_player/.venv/
+mac_player/build/
+mac_player/dist/
+mac_player/__pycache__/
