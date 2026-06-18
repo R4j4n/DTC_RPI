@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['main.py'],
+    ['web_window.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='DTC Mac Player',
+    name='DTC Chrome Kiosk',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['AppIcon.icns'],
+    icon=['ChromeIcon.icns'],
 )
 coll = COLLECT(
     exe,
@@ -41,11 +41,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='DTC Mac Player',
+    name='DTC Chrome Kiosk',
 )
 app = BUNDLE(
     coll,
-    name='DTC Mac Player.app',
-    icon='AppIcon.icns',
-    bundle_identifier='com.dtc.macplayer',
+    name='DTC Chrome Kiosk.app',
+    icon='ChromeIcon.icns',
+    bundle_identifier='com.dtc.chromekiosk',
 )
